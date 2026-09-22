@@ -24,7 +24,6 @@
     <path
         android:strokeColor="#1E293B"
         android:strokeWidth="2"
-        android:strokeDasharray="8,8"
         android:pathData="M 256,156 A 100,100 0 1,1 255.9,156" />
 
     <!-- Dead Reckoning Kinetic Drift Arc -->
