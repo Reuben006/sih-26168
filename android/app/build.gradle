@@ -4,15 +4,15 @@ plugins {
 }
 
 android {
-    namespace 'org.idrx.navigation'
+    namespace 'com.originx.idrx.navigation'
     compileSdk 34
 
     defaultConfig {
-        applicationId "org.idrx.navigation"
+        applicationId "com.originx.idrx.navigation"
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "3.0"
     }
 
     buildTypes {

@@ -1,4 +1,4 @@
-package org.idrx.navigation.service
+package com.originx.idrx.navigation.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

@@ -24,6 +24,7 @@ jobs:
           npm install
           npm run build
           cd ..
+          rm -rf android/app/src/main/assets
           mkdir -p android/app/src/main/assets
           cp -r frontend/dist/* android/app/src/main/assets/
 
