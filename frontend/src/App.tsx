@@ -31,7 +31,6 @@ export default function App() {
   const [evalResults, setEvalResults] = useState<any | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
 
-  // Persistent state refs prevent loop resets when controls are toggled[cite: 19]
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
 
@@ -222,7 +221,7 @@ export default function App() {
     const centerY = canvas.height / 2;
     const scale = 2.4;
 
-    const gridSpacing = 40;
+    const gridSpacing = 35;
     const gridOffsetX = (centerX - currentPos.x * scale) % gridSpacing;
     const gridOffsetY = (centerY + currentPos.y * scale) % gridSpacing;
 
@@ -258,7 +257,7 @@ export default function App() {
 
     ctx.fillStyle = '#38bdf8';
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 4.5, 0, 2 * Math.PI);
+    ctx.arc(centerX, centerY, 4.0, 0, 2 * Math.PI);
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5;
@@ -279,7 +278,7 @@ export default function App() {
     for (let x = 0; x < canvas.width; x += 35) {
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
     }
-    for (let y = 0; y < canvas.height; y += 25) {
+    for (let y = 0; y < canvas.height; y += 22) {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
     }
 
@@ -296,7 +295,7 @@ export default function App() {
       const step = canvas.width / 80;
       data.forEach((val, idx) => {
         const x = idx * step;
-        const y = midY - val * 55;
+        const y = midY - val * 45;
         if (idx === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       });
@@ -408,26 +407,26 @@ export default function App() {
   };
 
   return (
-    <div style={{ backgroundColor: '#121418', color: '#d1d5db', minHeight: '100vh', fontFamily: 'Consolas, monospace', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ backgroundColor: '#121418', color: '#d1d5db', height: '100vh', width: '100vw', fontFamily: 'Consolas, monospace', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box' }}>
       
       {/* Top Header */}
-      <header style={{ background: '#181b20', borderBottom: '1px solid #282c34', padding: '0.4rem 0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ fontSize: '0.95rem', fontWeight: 900, color: '#f3f4f6', letterSpacing: '0.5px' }}>IDR-X</span>
-          <div style={{ background: '#121418', border: '1px solid #282c34', padding: '0.15rem 0.5rem', borderRadius: '2px', fontSize: '0.65rem' }}>
+      <header style={{ background: '#181b20', borderBottom: '1px solid #282c34', padding: '0.25rem 0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.88rem', fontWeight: 900, color: '#f3f4f6', letterSpacing: '0.5px' }}>IDR-X</span>
+          <div style={{ background: '#121418', border: '1px solid #282c34', padding: '0.1rem 0.4rem', borderRadius: '2px', fontSize: '0.62rem' }}>
             <span style={{ color: '#9ca3af' }}>TEAM: </span>
             <strong style={{ color: '#f3f4f6' }}>ORIGIN X</strong>
-            <span style={{ color: '#374151', margin: '0 0.3rem' }}>|</span>
+            <span style={{ color: '#374151', margin: '0 0.25rem' }}>|</span>
             <span style={{ color: '#9ca3af' }}>ID: </span>
             <strong style={{ color: '#f59e0b' }}>134028</strong>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-          <div style={{ padding: '0.18rem 0.45rem', borderRadius: '2px', fontSize: '0.62rem', fontWeight: 700, background: telemetry?.gnss_available ? '#052e16' : '#450a0a', color: telemetry?.gnss_available ? '#4ade80' : '#f87171', border: `1px solid ${telemetry?.gnss_available ? '#166534' : '#991b1b'}` }}>
+        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+          <div style={{ padding: '0.15rem 0.4rem', borderRadius: '2px', fontSize: '0.6rem', fontWeight: 700, background: telemetry?.gnss_available ? '#052e16' : '#450a0a', color: telemetry?.gnss_available ? '#4ade80' : '#f87171', border: `1px solid ${telemetry?.gnss_available ? '#166534' : '#991b1b'}` }}>
             {telemetry?.gnss_available ? 'GNSS: LOCKED' : 'GNSS: OUTAGE'}
           </div>
-          <div style={{ padding: '0.18rem 0.45rem', borderRadius: '2px', fontSize: '0.62rem', fontWeight: 700, background: '#1f242d', color: '#93c5fd', border: '1px solid #374151' }}>
+          <div style={{ padding: '0.15rem 0.4rem', borderRadius: '2px', fontSize: '0.6rem', fontWeight: 700, background: '#1f242d', color: '#93c5fd', border: '1px solid #374151' }}>
             {telemetry ? telemetry.state : 'STANDBY'}
           </div>
           <button
@@ -436,9 +435,9 @@ export default function App() {
               background: showLogDrawer ? '#2563eb' : '#1f242d',
               color: '#f3f4f6',
               border: '1px solid #374151',
-              padding: '0.18rem 0.5rem',
+              padding: '0.15rem 0.45rem',
               borderRadius: '2px',
-              fontSize: '0.62rem',
+              fontSize: '0.6rem',
               fontWeight: 700,
               cursor: 'pointer'
             }}
@@ -449,7 +448,7 @@ export default function App() {
       </header>
 
       {/* Tabs Toolbar */}
-      <nav style={{ background: '#15171c', borderBottom: '1px solid #23272f', display: 'flex', overflowX: 'auto', gap: '0.2rem', padding: '0.25rem 0.8rem', whiteSpace: 'nowrap' }}>
+      <nav style={{ background: '#15171c', borderBottom: '1px solid #23272f', display: 'flex', overflowX: 'auto', gap: '0.2rem', padding: '0.2rem 0.6rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
         {(['dashboard', 'sensors', 'alignment', 'evaluation', 'architecture'] as const).map((tab) => (
           <button
             key={tab}
@@ -458,11 +457,11 @@ export default function App() {
               background: activeTab === tab ? '#222731' : 'transparent',
               color: activeTab === tab ? '#f3f4f6' : '#6b7280',
               border: activeTab === tab ? '1px solid #374151' : '1px solid transparent',
-              padding: '0.25rem 0.65rem',
+              padding: '0.2rem 0.55rem',
               borderRadius: '2px',
               cursor: 'pointer',
               fontWeight: 700,
-              fontSize: '0.68rem',
+              fontSize: '0.65rem',
               flexShrink: 0
             }}
           >
@@ -472,66 +471,68 @@ export default function App() {
       </nav>
 
       {/* Main Workspace Layout */}
-      <div style={{ flex: 1, padding: '0.6rem', display: 'flex', gap: '0.6rem', boxSizing: 'border-box', overflow: 'hidden' }}>
+      <div style={{ flex: 1, padding: '0.35rem 0.6rem 0.6rem 0.6rem', display: 'flex', gap: '0.5rem', boxSizing: 'border-box', overflow: 'hidden' }}>
         
         {/* TAB 1: DASHBOARD */}
         {activeTab === 'dashboard' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto' }}>
-            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.4rem 0.6rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto', paddingBottom: '0.8rem' }}>
+            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.3rem 0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center', flexShrink: 0 }}>
               <button
                 onClick={handleToggleRun}
-                style={{ background: running ? '#991b1b' : '#15803d', color: '#fff', border: 'none', padding: '0.35rem 0.7rem', borderRadius: '2px', cursor: 'pointer', fontWeight: 700, fontSize: '0.68rem' }}
+                style={{ background: running ? '#991b1b' : '#15803d', color: '#fff', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '2px', cursor: 'pointer', fontWeight: 700, fontSize: '0.65rem' }}
               >
                 {running ? 'HALT RUN' : 'ENGAGE RUN'}
               </button>
               <button
                 onClick={handleToggleOutage}
                 disabled={!running}
-                style={{ background: gnssOutage ? '#15803d' : '#b45309', color: '#fff', border: 'none', padding: '0.35rem 0.7rem', borderRadius: '2px', cursor: running ? 'pointer' : 'not-allowed', fontWeight: 700, fontSize: '0.68rem' }}
+                style={{ background: gnssOutage ? '#15803d' : '#b45309', color: '#fff', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '2px', cursor: running ? 'pointer' : 'not-allowed', fontWeight: 700, fontSize: '0.65rem' }}
               >
                 {gnssOutage ? 'RESTORE GNSS' : 'TRIGGER OUTAGE'}
               </button>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.65rem', color: '#9ca3af', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.62rem', color: '#9ca3af', cursor: 'pointer' }}>
                 <input type="checkbox" checked={nhcEnabled} onChange={(e) => handleToggleNhc(e.target.checked)} />
                 NHC (v_lat ≈ 0)
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.65rem', color: '#9ca3af', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.62rem', color: '#9ca3af', cursor: 'pointer' }}>
                 <input type="checkbox" checked={mapMatchEnabled} onChange={(e) => handleToggleMapMatch(e.target.checked)} />
                 Map Matching
               </label>
             </div>
 
-            <div style={{ background: '#101216', border: '1px solid #23272f', borderRadius: '2px', padding: '0.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontSize: '0.65rem' }}>
+            {/* Canvas fitted for landscape mobile heights */}
+            <div style={{ background: '#101216', border: '1px solid #23272f', borderRadius: '2px', padding: '0.35rem', flexShrink: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem', fontSize: '0.62rem' }}>
                 <span style={{ color: '#93c5fd', fontWeight: 700 }}>GEOSPATIAL PROJECTION (FOLLOW CAMERA)</span>
-                <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.62rem' }}>
+                <div style={{ display: 'flex', gap: '0.45rem', fontSize: '0.6rem' }}>
                   <span style={{ color: '#22c55e' }}>-- Truth</span>
                   <span style={{ color: '#ef4444' }}>- Raw DR</span>
                   <span style={{ color: '#38bdf8' }}>- EKF</span>
                   <span style={{ color: '#f59e0b' }}>- Matched</span>
                 </div>
               </div>
-              <canvas ref={canvasRef} width={760} height={210} style={{ width: '100%', height: 'auto', maxHeight: '35vh', borderRadius: '2px', border: '1px solid #1a1e24', display: 'block' }} />
+              <canvas ref={canvasRef} width={760} height={155} style={{ width: '100%', height: 'auto', maxHeight: '28vh', borderRadius: '2px', border: '1px solid #1a1e24', display: 'block' }} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem' }}>
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
-                <div style={{ fontSize: '0.6rem', color: '#6b7280' }}>TRAVELLED DISTANCE</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f3f4f6' }}>{telemetry?.distance_travelled ?? 0} m</div>
+            {/* Metrics Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem', flexShrink: 0 }}>
+              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem 0.45rem' }}>
+                <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>TRAVELLED DISTANCE</div>
+                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#f3f4f6' }}>{telemetry?.distance_travelled ?? 0} m</div>
               </div>
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
-                <div style={{ fontSize: '0.6rem', color: '#6b7280' }}>POSITION ERROR</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#38bdf8' }}>{telemetry?.position_error_m ?? 0} m</div>
+              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem 0.45rem' }}>
+                <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>POSITION ERROR</div>
+                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#38bdf8' }}>{telemetry?.position_error_m ?? 0} m</div>
               </div>
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
-                <div style={{ fontSize: '0.6rem', color: '#6b7280' }}>DRIFT ERROR ACCUM.</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: (telemetry?.drift_percentage || 0) < 10 ? '#22c55e' : '#ef4444' }}>
+              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem 0.45rem' }}>
+                <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>DRIFT ERROR ACCUM.</div>
+                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: (telemetry?.drift_percentage || 0) < 10 ? '#22c55e' : '#ef4444' }}>
                   {telemetry?.drift_percentage ?? 0} %
                 </div>
               </div>
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
-                <div style={{ fontSize: '0.6rem', color: '#6b7280' }}>PS168 TARGET (&lt;10%)</div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: telemetry?.sih_target_met ? '#22c55e' : '#ef4444' }}>
+              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem 0.45rem' }}>
+                <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>PS168 TARGET (&lt;10%)</div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: telemetry?.sih_target_met ? '#22c55e' : '#ef4444' }}>
                   {telemetry?.sih_target_met ? 'PASS (<10% MET)' : 'OUT OF SPEC'}
                 </div>
               </div>
@@ -541,51 +542,51 @@ export default function App() {
 
         {/* TAB 2: SENSORS */}
         {activeTab === 'sensors' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto' }}>
-            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.4rem 0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#f3f4f6' }}>100 Hz IMU OSCILLOSCOPE TRACE</span>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto', paddingBottom: '0.8rem' }}>
+            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.3rem 0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#f3f4f6' }}>100 Hz IMU OSCILLOSCOPE TRACE</span>
               <button
                 onClick={() => setFilteredSensors(!filteredSensors)}
-                style={{ background: filteredSensors ? '#2563eb' : '#374151', color: '#fff', border: 'none', padding: '0.2rem 0.5rem', borderRadius: '2px', cursor: 'pointer', fontSize: '0.62rem', fontWeight: 700 }}
+                style={{ background: filteredSensors ? '#2563eb' : '#374151', color: '#fff', border: 'none', padding: '0.15rem 0.4rem', borderRadius: '2px', cursor: 'pointer', fontSize: '0.58rem', fontWeight: 700 }}
               >
                 {filteredSensors ? 'FILTER: LOW-PASS' : 'FILTER: RAW'}
               </button>
             </div>
 
-            <div style={{ background: '#101216', border: '1px solid #23272f', borderRadius: '2px', padding: '0.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontSize: '0.65rem' }}>
+            <div style={{ background: '#101216', border: '1px solid #23272f', borderRadius: '2px', padding: '0.35rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem', fontSize: '0.62rem' }}>
                 <span style={{ color: '#9ca3af' }}>KINEMATIC TRACE (±2g / ±1 rad/s)</span>
-                <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.62rem' }}>
+                <div style={{ display: 'flex', gap: '0.45rem', fontSize: '0.6rem' }}>
                   <span style={{ color: '#38bdf8' }}>─ Ax</span>
                   <span style={{ color: '#f59e0b' }}>─ Ay</span>
                   <span style={{ color: '#a855f7' }}>─ Gz (x15)</span>
                 </div>
               </div>
-              <canvas ref={sensorWaveformRef} width={760} height={160} style={{ width: '100%', height: 'auto', maxHeight: '30vh', borderRadius: '2px', border: '1px solid #1a1e24', display: 'block' }} />
+              <canvas ref={sensorWaveformRef} width={760} height={145} style={{ width: '100%', height: 'auto', maxHeight: '25vh', borderRadius: '2px', border: '1px solid #1a1e24', display: 'block' }} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.5rem' }}>
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.6rem' }}>
-                <div style={{ fontSize: '0.65rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.3rem' }}>ACCELEROMETER (m/s²)</div>
-                <div style={{ fontSize: '0.72rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Forward (Ax):</span><strong>{telemetry?.imu?.ax ?? 0.0}</strong></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Lateral (Ay):</span><strong>{telemetry?.imu?.ay ?? 0.0}</strong></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Vertical (Az):</span><strong>{telemetry?.imu?.az ?? 9.807}</strong></div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
+              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
+                <div style={{ fontSize: '0.6rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.2rem' }}>ACCELEROMETER (m/s²)</div>
+                <div style={{ fontSize: '0.68rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Ax:</span><strong>{telemetry?.imu?.ax ?? 0.0}</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Ay:</span><strong>{telemetry?.imu?.ay ?? 0.0}</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Az:</span><strong>{telemetry?.imu?.az ?? 9.807}</strong></div>
                 </div>
               </div>
 
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.6rem' }}>
-                <div style={{ fontSize: '0.65rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.3rem' }}>GYROSCOPE (rad/s)</div>
-                <div style={{ fontSize: '0.72rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Roll (Gx):</span><strong>{telemetry?.imu?.gx ?? 0.0}</strong></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Pitch (Gy):</span><strong>{telemetry?.imu?.gy ?? 0.0}</strong></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Yaw (Gz):</span><strong>{telemetry?.imu?.gz ?? 0.0}</strong></div>
+              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
+                <div style={{ fontSize: '0.6rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.2rem' }}>GYROSCOPE (rad/s)</div>
+                <div style={{ fontSize: '0.68rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Gx:</span><strong>{telemetry?.imu?.gx ?? 0.0}</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Gy:</span><strong>{telemetry?.imu?.gy ?? 0.0}</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Gz:</span><strong>{telemetry?.imu?.gz ?? 0.0}</strong></div>
                 </div>
               </div>
 
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.6rem' }}>
-                <div style={{ fontSize: '0.65rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.3rem' }}>EULER ATTITUDE (deg)</div>
-                <div style={{ fontSize: '0.72rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
+                <div style={{ fontSize: '0.6rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.2rem' }}>EULER ATTITUDE (deg)</div>
+                <div style={{ fontSize: '0.68rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Pitch (θ):</span><strong>{telemetry?.orientation?.pitch ?? 0.0}°</strong></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Roll (φ):</span><strong>{telemetry?.orientation?.roll ?? 0.0}°</strong></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Yaw (ψ):</span><strong>{telemetry?.orientation?.yaw ?? 0.0}°</strong></div>
@@ -597,27 +598,27 @@ export default function App() {
 
         {/* TAB 3: ALIGNMENT */}
         {activeTab === 'alignment' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto' }}>
-            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.6rem' }}>
-              <div style={{ fontSize: '0.72rem', color: '#f3f4f6', fontWeight: 700 }}>PHONE-TO-VEHICLE ROTATION ESTIMATION (C_b^v)</div>
-              <p style={{ color: '#6b7280', fontSize: '0.65rem', margin: '2px 0 0 0' }}>Resolves dynamic rotation between phone body ($b$) and vehicle ($v$) frame.</p>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto', paddingBottom: '0.8rem' }}>
+            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
+              <div style={{ fontSize: '0.68rem', color: '#f3f4f6', fontWeight: 700 }}>PHONE-TO-VEHICLE ROTATION ESTIMATION (C_b^v)</div>
+              <p style={{ color: '#6b7280', fontSize: '0.6rem', margin: '2px 0 0 0' }}>Resolves dynamic rotation between phone body ($b$) and vehicle ($v$) frame.</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.6rem' }}>
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.6rem' }}>
-                <div style={{ fontSize: '0.68rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.4rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.45rem' }}>
+              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
+                <div style={{ fontSize: '0.62rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.25rem' }}>
                   DCM MATRIX [MODE {alignmentMode}]
                 </div>
-                <div style={{ background: '#101216', border: '1px solid #23272f', padding: '0.5rem', borderRadius: '2px', fontSize: '0.72rem', lineHeight: '1.6' }}>
+                <div style={{ background: '#101216', border: '1px solid #23272f', padding: '0.35rem', borderRadius: '2px', fontSize: '0.68rem', lineHeight: '1.5' }}>
                   {getDcmMatrix().map((row, idx) => (
                     <div key={idx} style={{ color: '#38bdf8' }}>[ {row.join('  ')} ]</div>
                   ))}
                 </div>
               </div>
 
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.6rem' }}>
-                <div style={{ fontSize: '0.68rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.4rem' }}>MOUNTING PRESETS</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
+                <div style={{ fontSize: '0.62rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.25rem' }}>MOUNTING PRESETS</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                   {(['A', 'B', 'C'] as const).map((mode) => (
                     <button
                       key={mode}
@@ -629,11 +630,11 @@ export default function App() {
                         background: alignmentMode === mode ? '#1e293b' : '#121418',
                         border: `1px solid ${alignmentMode === mode ? '#38bdf8' : '#282c34'}`,
                         color: alignmentMode === mode ? '#38bdf8' : '#9ca3af',
-                        padding: '0.4rem',
+                        padding: '0.3rem',
                         borderRadius: '2px',
                         cursor: 'pointer',
                         textAlign: 'left',
-                        fontSize: '0.68rem'
+                        fontSize: '0.62rem'
                       }}
                     >
                       <strong>MODE {mode}:</strong> {mode === 'A' ? 'Windshield (Level)' : mode === 'B' ? 'Dashboard (Pitch +14°)' : 'Center Console (3D Tilt)'}
@@ -647,29 +648,29 @@ export default function App() {
 
         {/* TAB 4: EVALUATION */}
         {activeTab === 'evaluation' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto' }}>
-            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.6rem' }}>
-              <div style={{ fontSize: '0.72rem', color: '#f3f4f6', fontWeight: 700, marginBottom: '0.2rem' }}>IO-VNBD DATASET BENCHMARK EVALUATOR</div>
-              <input type="file" accept=".csv" onChange={handleFileUpload} style={{ color: '#9ca3af', fontSize: '0.68rem' }} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto', paddingBottom: '0.8rem' }}>
+            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
+              <div style={{ fontSize: '0.68rem', color: '#f3f4f6', fontWeight: 700, marginBottom: '0.2rem' }}>IO-VNBD DATASET BENCHMARK EVALUATOR</div>
+              <input type="file" accept=".csv" onChange={handleFileUpload} style={{ color: '#9ca3af', fontSize: '0.62rem' }} />
             </div>
 
             {evalResults && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem' }}>
-                <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.5rem' }}>
-                  <div style={{ fontSize: '0.6rem', color: '#6b7280' }}>SYNCHRONIZED POINTS</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f3f4f6' }}>{evalResults.dataset_points}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem' }}>
+                <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem' }}>
+                  <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>SYNCHRONIZED POINTS</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#f3f4f6' }}>{evalResults.dataset_points}</div>
                 </div>
-                <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.5rem' }}>
-                  <div style={{ fontSize: '0.6rem', color: '#6b7280' }}>POSITION RMSE</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#38bdf8' }}>{evalResults.rmse_m} m</div>
+                <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem' }}>
+                  <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>POSITION RMSE</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#38bdf8' }}>{evalResults.rmse_m} m</div>
                 </div>
-                <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.5rem' }}>
-                  <div style={{ fontSize: '0.6rem', color: '#6b7280' }}>MEASURED DRIFT %</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#22c55e' }}>{evalResults.drift_percentage} %</div>
+                <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem' }}>
+                  <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>MEASURED DRIFT %</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#22c55e' }}>{evalResults.drift_percentage} %</div>
                 </div>
-                <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.5rem' }}>
-                  <div style={{ fontSize: '0.6rem', color: '#6b7280' }}>PS168 TARGET</div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#22c55e' }}>PASS (&lt; 10%)</div>
+                <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem' }}>
+                  <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>PS168 TARGET</div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#22c55e' }}>PASS (&lt; 10%)</div>
                 </div>
               </div>
             )}
@@ -678,11 +679,11 @@ export default function App() {
 
         {/* TAB 5: ARCHITECTURE */}
         {activeTab === 'architecture' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto' }}>
-            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.6rem' }}>
-              <div style={{ fontSize: '0.72rem', color: '#f3f4f6', fontWeight: 700, marginBottom: '0.3rem' }}>PS168 FUSION SPECIFICATION</div>
-              <div style={{ background: '#101216', border: '1px solid #23272f', padding: '0.6rem', borderRadius: '2px', fontSize: '0.62rem', lineHeight: '1.4' }}>
-                <pre style={{ margin: 0, color: '#9ca3af', fontFamily: 'monospace' }}>{`
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto', paddingBottom: '1.5rem' }}>
+            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
+              <div style={{ fontSize: '0.68rem', color: '#f3f4f6', fontWeight: 700, marginBottom: '0.2rem' }}>PS168 FUSION SPECIFICATION</div>
+              <div style={{ background: '#101216', border: '1px solid #23272f', padding: '0.4rem', borderRadius: '2px', overflowX: 'auto' }}>
+                <pre style={{ margin: 0, color: '#9ca3af', fontFamily: 'monospace', fontSize: '0.55rem', lineHeight: '1.25' }}>{`
 Smartphone Sensors (IMU @ 100Hz, GNSS @ 10Hz)
        │
        ▼
@@ -709,12 +710,12 @@ Continuous Vehicle Navigation Stream (Drift < 10% Distance)
 
         {/* Collapsible Log Drawer */}
         {showLogDrawer && (
-          <div style={{ width: '240px', background: '#15171c', border: '1px solid #23272f', borderRadius: '2px', padding: '0.5rem', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem', borderBottom: '1px solid #282c34', paddingBottom: '0.2rem' }}>
-              <span style={{ fontSize: '0.65rem', color: '#9ca3af', fontWeight: 700 }}>EVENT LOG</span>
-              <span style={{ fontSize: '0.58rem', color: '#6b7280' }}>134028</span>
+          <div style={{ width: '220px', background: '#15171c', border: '1px solid #23272f', borderRadius: '2px', padding: '0.4rem', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', borderBottom: '1px solid #282c34', paddingBottom: '0.15rem' }}>
+              <span style={{ fontSize: '0.62rem', color: '#9ca3af', fontWeight: 700 }}>EVENT LOG</span>
+              <span style={{ fontSize: '0.55rem', color: '#6b7280' }}>134028</span>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', fontSize: '0.6rem', color: '#6b7280', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+            <div style={{ flex: 1, overflowY: 'auto', fontSize: '0.58rem', color: '#6b7280', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
               {logs.map((log, idx) => (
                 <div key={idx} style={{ borderBottom: '1px solid #1a1e24', paddingBottom: '2px', wordBreak: 'break-all' }}>{log}</div>
               ))}
