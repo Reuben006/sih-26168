@@ -409,8 +409,8 @@ export default function App() {
   return (
     <div style={{ backgroundColor: '#121418', color: '#d1d5db', height: '100vh', width: '100vw', fontFamily: 'Consolas, monospace', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box' }}>
       
-      {/* Top Header */}
-      <header style={{ background: '#181b20', borderBottom: '1px solid #282c34', padding: '0.25rem 0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+      {/* Top Header: Inset 2.2rem horizontally to clear notch and rounded glass */}
+      <header style={{ background: '#181b20', borderBottom: '1px solid #282c34', padding: '0.25rem 2.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ fontSize: '0.88rem', fontWeight: 900, color: '#f3f4f6', letterSpacing: '0.5px' }}>IDR-X</span>
           <div style={{ background: '#121418', border: '1px solid #282c34', padding: '0.1rem 0.4rem', borderRadius: '2px', fontSize: '0.62rem' }}>
@@ -447,8 +447,8 @@ export default function App() {
         </div>
       </header>
 
-      {/* Tabs Toolbar */}
-      <nav style={{ background: '#15171c', borderBottom: '1px solid #23272f', display: 'flex', overflowX: 'auto', gap: '0.2rem', padding: '0.2rem 0.6rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
+      {/* Tabs Toolbar: Inset 2.2rem horizontally */}
+      <nav style={{ background: '#15171c', borderBottom: '1px solid #23272f', display: 'flex', overflowX: 'auto', gap: '0.2rem', padding: '0.2rem 2.2rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
         {(['dashboard', 'sensors', 'alignment', 'evaluation', 'architecture'] as const).map((tab) => (
           <button
             key={tab}
@@ -470,8 +470,8 @@ export default function App() {
         ))}
       </nav>
 
-      {/* Main Workspace Layout */}
-      <div style={{ flex: 1, padding: '0.35rem 0.6rem 0.6rem 0.6rem', display: 'flex', gap: '0.5rem', boxSizing: 'border-box', overflow: 'hidden' }}>
+      {/* Main Workspace: Inset 2.2rem horizontally */}
+      <div style={{ flex: 1, padding: '0.35rem 2.2rem 0.5rem 2.2rem', display: 'flex', gap: '0.5rem', boxSizing: 'border-box', overflow: 'hidden' }}>
         
         {/* TAB 1: DASHBOARD */}
         {activeTab === 'dashboard' && (
