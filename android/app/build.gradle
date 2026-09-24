@@ -11,8 +11,8 @@ android {
         applicationId "com.originx.idrx.navigation"
         minSdk 26
         targetSdk 34
-        versionCode 5
-        versionName "3.5"
+        versionCode 6
+        versionName "4.0"
     }
 
     buildTypes {
@@ -23,10 +23,12 @@ android {
             debuggable true
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
     kotlinOptions {
         jvmTarget = '17'
     }

@@ -52,16 +52,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Force landscape orientation
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
 
-        // 2. Extend into camera notch/punch-hole area (eliminates black side borders)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes.layoutInDisplayCutoutMode =
                 WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
 
-        // 3. Hide status bar and navigation bar in immersive sticky mode
         hideSystemUI()
 
         val assetLoader = WebViewAssetLoader.Builder()
@@ -93,18 +90,19 @@ class MainActivity : AppCompatActivity() {
                 ): Boolean {
                     fileUploadCallback?.onReceiveValue(null)
                     fileUploadCallback = filePathCallback
-
                     val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
                         addCategory(Intent.CATEGORY_OPENABLE)
                         type = "*/*"
-                        putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("text/csv", "text/comma-separated-values", "text/plain", "*/*"))
+                        putExtra(
+                            Intent.EXTRA_MIME_TYPES,
+                            arrayOf("text/csv", "text/comma-separated-values", "text/plain", "*/*")
+                        )
                     }
                     filePickerLauncher.launch(Intent.createChooser(intent, "Select IO-VNBD Dataset File"))
                     return true
                 }
             }
         }
-
         setContentView(webView)
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
     }

@@ -19,7 +19,6 @@ import androidx.core.app.NotificationCompat
 class NavigationForegroundService : Service(), SensorEventListener, LocationListener {
     private lateinit var sensorManager: SensorManager
     private lateinit var locationManager: LocationManager
-
     private var isGnssAvailable = true
     private var lastGnssTime = 0L
     private val OUTAGE_TIMEOUT_MS = 3000L
@@ -75,6 +74,7 @@ class NavigationForegroundService : Service(), SensorEventListener, LocationList
         if (now - lastGnssTime > OUTAGE_TIMEOUT_MS && isGnssAvailable) {
             isGnssAvailable = false
         }
+
         if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
             if (lastImuTimestamp != 0L) {
                 val dt = (event.timestamp - lastImuTimestamp) * 1e-9
@@ -97,5 +97,6 @@ class NavigationForegroundService : Service(), SensorEventListener, LocationList
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
     override fun onBind(intent: Intent?): IBinder? = null
 }

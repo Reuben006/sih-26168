@@ -4,3 +4,19 @@ dist/
 .gradle/
 build/
 *.apk
+
+# Temporary upload directory
+temp_datasets/
+backend/temp_datasets/
+
+# Large raw benchmark CSVs
+backend/app/datasets/*.csv
+*.csv
+
+# Python cache & virtual environments
+**/__pycache__/
+__pycache__/
+*.py[cod]
+*.pyc
+.venv/
+venv/
