@@ -1,917 +1,227 @@
-import React, { useState, useEffect, useRef } from 'react';
-
-interface Telemetry {
-  state: string;
-  gnss_available: boolean;
-  distance_travelled: number;
-  outage_duration_s: number;
-  position_error_m: number;
-  drift_percentage: number;
-  sih_target_met: boolean;
-  ref_pos: { x: number; y: number };
-  corrected_pos: { x: number; y: number };
-  map_matched_pos?: { x: number; y: number };
-  raw_dr_pos: { x: number; y: number };
-  imu: { ax: number; ay: number; az: number; gx: number; gy: number; gz: number };
-  orientation: { pitch: number; roll: number; yaw: number };
+import React, { useEffect, useRef, useState } from 'react';
+import { Demo, LocalEngine, Packet, XY, Road, roadsFromGeoJSON, matchRoad, forestPredict } from './engine';
+import './style.css';
+const API = (import.meta as any).env.VITE_API_URL || 'http://127.0.0.1:8000';
+const fmt = (n: any, d = 1) => typeof n === 'number' && Number.isFinite(n) ? n.toFixed(d) : '—';
+const save = (name: string, data: any) => { data = { ...data, project: 'KinematiX', team: { name: 'ORIGIN X', id: '134028' } }; if ((window as any).KinematiX?.saveReport) {
+    (window as any).KinematiX.saveReport(name, JSON.stringify(data, null, 2));
+    return;
+} const u = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); const a = document.createElement('a'); a.href = u; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); };
+type Point = {
+    reference?: XY;
+    estimated: XY;
+    baseline?: XY;
+    uncertainty?: number;
+    error?: number;
+    t?: number;
+};
+function Plot({ points, roads = [], matched = null }: {
+    points: Point[];
+    roads?: Road[];
+    matched?: XY | null;
+}) {
+    const all = points.flatMap(p => [p.estimated, ...(p.reference ? [p.reference] : []), ...(p.baseline ? [p.baseline] : [])]);
+    if (!all.length)
+        all.push([0, 0], [100, 100]);
+    const xs = all.map(p => p[0]), ys = all.map(p => p[1]);
+    const xmin = Math.min(...xs), xmax = Math.max(...xs), ymin = Math.min(...ys), ymax = Math.max(...ys);
+    const scale = Math.min(820 / Math.max(100, xmax - xmin), 420 / Math.max(100, ymax - ymin));
+    const cx = (xmin + xmax) / 2, cy = (ymin + ymax) / 2;
+    const xy = (p: XY) => [460 + (p[0] - cx) * scale, 250 - (p[1] - cy) * scale];
+    const path = (key: 'reference' | 'estimated' | 'baseline') => points.filter(p => p[key]).map((p, i) => `${i ? 'L' : 'M'}${xy(p[key] as XY).join(',')}`).join(' ');
+    const last = points.at(-1), pos = last ? xy(last.estimated) : [460, 250];
+    return <svg className="plot" viewBox="0 0 920 500" role="img" aria-label="EKF east-north trajectory in metres"><defs><pattern id="grid" width="46" height="50" patternUnits="userSpaceOnUse"><path d="M 46 0 L 0 0 0 50" fill="none" stroke="#303238" strokeWidth=".6"/></pattern><radialGradient id="glow"><stop stopColor="#f49b59" stopOpacity=".1"/><stop offset="1" stopColor="#f49b59" stopOpacity="0"/></radialGradient></defs><rect width="920" height="500" fill="url(#grid)"/><circle cx="460" cy="250" r="240" fill="url(#glow)"/>
+    {roads.map((r, i) => <path key={i} d={`M${xy(r.a)} L${xy(r.b)}`} stroke="#53677a" strokeWidth="5" opacity=".45"/>)}
+    <path d={path('baseline')} className="baseline"/><path d={path('reference')} className="reference"/><path d={path('estimated')} className="estimated"><title>EKF trajectory</title></path>
+    {last && <><circle cx={pos[0]} cy={pos[1]} r={Math.min(110, (last.uncertainty || 3) * scale)} fill="#f49b59" opacity=".07" stroke="#f49b59"/><circle cx={pos[0]} cy={pos[1]} r="11" fill="#352619" stroke="#f49b59" strokeWidth="2"/><circle cx={pos[0]} cy={pos[1]} r="4" fill="#fff0de"/></>}
+    {matched && <circle cx={xy(matched)[0]} cy={xy(matched)[1]} r="7" fill="#eab676"/>}
+    <text x="28" y="32" fill="#81949d" fontSize="11" letterSpacing="2">LOCAL ENU • METRES</text><text x="870" y="35" fill="#93a6b0" fontSize="13">N ↑</text>
+    <path d="M30 454v6h100v-6" stroke="#8d9da5" fill="none"/><text x="30" y="480" fill="#81949d" fontSize="11">{fmt(100 / scale, 0)} m</text>
+  </svg>;
 }
-
-type AlignmentMode = 'A' | 'B' | 'C';
-
+function Spark({ values }: {
+    values: number[];
+}) { const max = Math.max(.1, ...values.map(Math.abs)); return <svg viewBox="0 0 240 48" className="spark"><path d="M0 24H240" stroke="#273940"/><polyline points={values.map((n, i) => `${i * 240 / Math.max(1, values.length - 1)},${24 - n / max * 20}`).join(' ')} fill="none" stroke="currentColor" strokeWidth="1.5"/></svg>; }
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'sensors' | 'alignment' | 'evaluation' | 'architecture'>('dashboard');
-  const [running, setRunning] = useState(false);
-  const [gnssOutage, setGnssOutage] = useState(false);
-  const [nhcEnabled, setNhcEnabled] = useState(true);
-  const [mapMatchEnabled, setMapMatchEnabled] = useState(true);
-  const [filteredSensors, setFilteredSensors] = useState(true);
-  const [alignmentMode, setAlignmentMode] = useState<AlignmentMode>('A');
-  const [showLogDrawer, setShowLogDrawer] = useState(false);
-  const [telemetry, setTelemetry] = useState<Telemetry | null>(null);
-  const [evalResults, setEvalResults] = useState<any | null>(null);
-  const [isEvaluating, setIsEvaluating] = useState(false);
-  const [activePreset, setActivePreset] = useState<string>('urban_canyon');
-  const [logs, setLogs] = useState<string[]>([]);
-
-  const activeTabRef = useRef(activeTab);
-  activeTabRef.current = activeTab;
-
-  const gnssOutageRef = useRef(gnssOutage);
-  gnssOutageRef.current = gnssOutage;
-
-  const nhcEnabledRef = useRef(nhcEnabled);
-  nhcEnabledRef.current = nhcEnabled;
-
-  const mapMatchEnabledRef = useRef(mapMatchEnabled);
-  mapMatchEnabledRef.current = mapMatchEnabled;
-
-  const filteredSensorsRef = useRef(filteredSensors);
-  filteredSensorsRef.current = filteredSensors;
-
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const sensorWaveformRef = useRef<HTMLCanvasElement>(null);
-
-  const trajectory = useRef<{ ref: any[]; corrected: any[]; raw: any[]; matched: any[] }>({
-    ref: [],
-    corrected: [],
-    raw: [],
-    matched: []
-  });
-
-  const sensorHistory = useRef<{ ax: number[]; ay: number[]; gz: number[] }>({
-    ax: new Array(80).fill(0),
-    ay: new Array(80).fill(0),
-    gz: new Array(80).fill(0)
-  });
-
-  const addLog = (msg: string) => {
-    const timeStr = new Date().toISOString().substring(11, 23);
-    setLogs(prev => [`[${timeStr}] ${msg}`, ...prev.slice(0, 49)]);
-  };
-
-  useEffect(() => {
-    if (activeTab === 'dashboard') renderTrajectoryCanvas();
-    if (activeTab === 'sensors') renderWaveformCanvas();
-  }, [activeTab]);
-
-  useEffect(() => {
-    let ws: WebSocket | null = null;
-    let localTimer: any = null;
-
-    if (running) {
-      addLog("BUS_ENGAGED: Telemetry bus stream active.");
-      try {
-        ws = new WebSocket("ws://localhost:8000/ws/telemetry");
-        ws.onopen = () => addLog("CARRIER_LOCKED: Linked to Python EKF backend engine.");
-        ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          updateTelemetry(data);
+    const isAndroid = Boolean((window as any).KinematiX);
+    const [serverAddress, setServerAddress] = useState(() => localStorage.getItem('kinematix-server') || API);
+    const [connectedServer, setConnectedServer] = useState('');
+    const [checkingServer, setCheckingServer] = useState(false);
+    const [serverMessage, setServerMessage] = useState('Requires connection to the desktop evaluation server.');
+    const [gnssStatus, setGnssStatus] = useState('Searching for GPS position…');
+    const [rawImu, setRawImu] = useState<{acc:number[], gyro:number[], time:number} | null>(null);
+    const [fullscreen, setFullscreen] = useState(Boolean((window as any).KinematiX?.isFullscreen?.()));
+    const [tab, setTab] = useState('cockpit'), [running, setRunning] = useState(false), [packet, setPacket] = useState<Packet | null>(null), [points, setPoints] = useState<Point[]>([]), [denied, setDenied] = useState(false);
+    const [backend, setBackend] = useState(false), [result, setResult] = useState<any>(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [recording, setRecording] = useState('saved_example'), [duration, setDuration] = useState(30), [model, setModel] = useState<any>(null), [events, setEvents] = useState<string[]>(['KinematiX initialized. Local demonstration ready.']);
+    const [roads, setRoads] = useState<Road[]>([]), [roadName, setRoadName] = useState(''), [live, setLive] = useState(false), [origin, setOrigin] = useState<XY | null>(null), [sensorHistory, setSensorHistory] = useState<number[]>([]), [report, setReport] = useState<any>(null);
+    const demo = useRef(new Demo()), phone = useRef(new LocalEngine()), buffer = useRef<number[][]>([]), lastFix = useRef<any>(null), fixVersion = useRef(-1), forward = useRef<XY | number[]>([0, 0, 0]), correlation = useRef([0, 0, 0]), lastSpeed = useRef(0), lastMode = useRef(''), liveOrigin = useRef<XY | null>(null), imuPrevious = useRef(0), speedOffset = useRef(0);
+    const log = (s: string) => setEvents(e => [`${new Date().toLocaleTimeString()}  ${s}`, ...e].slice(0, 24));
+    const accept = (p: Packet) => { setPacket(p); setPoints(a => [...a, { estimated: [p.corrected_pos.x, p.corrected_pos.y], reference: p.ref_pos ? [p.ref_pos.x, p.ref_pos.y] : undefined, baseline: p.raw_dr_pos ? [p.raw_dr_pos.x, p.raw_dr_pos.y] : undefined, uncertainty: p.uncertainty_m } as Point].slice(-1600)); setSensorHistory(a => [...a, p.imu.ax].slice(-100)); if (p.state !== lastMode.current) {
+        lastMode.current = p.state;
+        log(p.state.replaceAll('_', ' '));
+    } if (p.shock)
+        log('Shock detected • acceleration update suppressed'); };
+    useEffect(() => {
+        if (isAndroid) return;
+        let active = true;
+        const check = async () => {
+            try {
+                const response = await fetch(`${API}/api/health`, { signal: AbortSignal.timeout(4000) });
+                const health = await response.json();
+                if (!response.ok || health.project !== 'KinematiX' || health.status !== 'ready') throw Error();
+                if (active) { setConnectedServer(API); setBackend(true); }
+            } catch { if (active) { setBackend(false); setConnectedServer(''); } }
         };
-        ws.onerror = () => {
-          addLog("FALLBACK: Backend offline. Running deterministic kinematic mechanization.");
-          runFallbackSimulation();
+        check(); const timer = setInterval(check, 10000);
+        return () => { active = false; clearInterval(timer); };
+    }, [isAndroid]);
+    useEffect(() => { fetch('./speed_model.json').then(r => r.ok ? r.json() : null).then(setModel).catch(() => { }); fetch('./benchmark_summary.json').then(r => r.ok ? r.json() : null).then(setReport).catch(() => { }); }, []);
+    useEffect(() => { if (!running || live)
+        return; const id = setInterval(() => accept(demo.current.step()), 100); return () => clearInterval(id); }, [running, live]);
+    useEffect(() => {
+        const handler = (event: any) => {
+            if (!live)
+                return;
+            const d = event.detail;
+            if (d.type === 'gnss-status') { setGnssStatus(d.message); return; }
+            if (d.type === 'error') {
+                setError(d.message);
+                setLive(false);
+                setRunning(false);
+                return;
+            }
+            if (d.type === 'gnss') {
+                lastFix.current = d;
+                return;
+            }
+            if (d.type === 'imu') setRawImu({acc:d.acc, gyro:d.gyro, time:d.time});
+            if (d.type !== 'imu' || !lastFix.current)
+                return;
+            const fix = lastFix.current;
+            let o = liveOrigin.current;
+            if (!o) {
+                o = [fix.lat, fix.lon];
+                liveOrigin.current = o;
+                setOrigin(o);
+                phone.current.v = fix.speed;
+                phone.current.h = (90 - fix.bearing) * Math.PI / 180;
+            }
+            const g = d.gravity as number[], a = d.acc as number[], gyro = d.gyro as number[];
+            const gn = Math.hypot(...g) || 9.80665, u = g.map(v => v / gn), lin = a.map((v, i) => v - g[i]);
+            const vertical = lin.reduce((s, v, i) => s + v * u[i], 0), yaw = gyro.reduce((s: number, v: number, i: number) => s + v * u[i], 0);
+            const horizontal = Math.sqrt(Math.max(0, lin.reduce((s, v) => s + v * v, 0) - vertical * vertical));
+            buffer.current = [...buffer.current, [horizontal, vertical, yaw, Math.hypot(...gyro)]].slice(-20);
+            const pred = forestPredict(model, buffer.current);
+            const dt = imuPrevious.current ? Math.min(.5, Math.max(.001, (d.time - imuPrevious.current) / 1000)) : .1;
+            imuPrevious.current = d.time;
+            let measurement: any = undefined;
+            if (fix.time !== fixVersion.current && !denied) {
+                const dv = fix.speed - lastSpeed.current;
+                correlation.current = correlation.current.map((v, i) => v * .98 + lin[i] * dv);
+                const norm = Math.hypot(...correlation.current);
+                if (norm > 1)
+                    forward.current = correlation.current.map(v => v / norm);
+                lastSpeed.current = fix.speed;
+                fixVersion.current = fix.time;
+                measurement = { x: (fix.lon - o[1]) * Math.PI / 180 * 6378137 * Math.cos(o[0] * Math.PI / 180), y: (fix.lat - o[0]) * Math.PI / 180 * 6378137, v: fix.speed, h: (90 - fix.bearing) * Math.PI / 180, accuracy: fix.accuracy };
+                if (pred !== undefined)
+                    speedOffset.current = fix.speed - pred;
+            }
+            const acc = lin.reduce((s, v, i) => s + v * forward.current[i], 0), shock = Math.abs(vertical) > 3.5 || Math.hypot(...lin) > 10;
+            const e = phone.current;
+            e.step(dt, yaw, model?.forward_acceleration_mode === 'speed-update-only' ? 0 : acc, measurement, shock, pred !== undefined ? Math.max(0, pred + speedOffset.current) : undefined);
+            accept({ source: 'phone', timestamp: e.time, state: e.mode, gnss_available: e.time - e.lastFix < 1.5, distance_travelled: e.distance, outage_duration_s: e.outage, position_error_m: null, speed_mps: e.v, heading_deg: e.h * 180 / Math.PI, uncertainty_m: 2.448 * Math.sqrt(e.variance), corrected_pos: { x: e.x, y: e.y }, shock, imu: { ax: acc, ay: horizontal, az: vertical, gz: yaw } });
         };
-      } catch {
-        runFallbackSimulation();
-      }
+        window.addEventListener('kinematix-sensor', handler);
+        return () => window.removeEventListener('kinematix-sensor', handler);
+    }, [live, model, denied]);
+    async function connectServer() {
+        setCheckingServer(true); setBackend(false); setConnectedServer('');
+        try {
+            const url = new URL(serverAddress.trim());
+            if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw Error('Enter an HTTP or HTTPS server address without credentials or query parameters.');
+            const address = url.href.replace(/\/$/, '');
+            const response = await fetch(`${address}/api/health`, { signal: AbortSignal.timeout(8000) });
+            const health = await response.json();
+            if (!response.ok || health.project !== 'KinematiX' || health.status !== 'ready') throw Error('This address is not a ready KinematiX evaluation server.');
+            setConnectedServer(address); setBackend(true); localStorage.setItem('kinematix-server', address);
+            setServerMessage('Connected. Uploaded CSV files will be sent to this server for evaluation.');
+        } catch (e: any) { setServerMessage(e.message.includes('address') ? e.message : 'Cannot connect. Check the laptop address, backend and Wi-Fi connection.'); }
+        finally { setCheckingServer(false); }
     }
-
-    function runFallbackSimulation() {
-      let t = 0;
-      let dist = 0;
-      let heading = 0;
-      let refX = 0, refY = 0;
-      let rawX = 0, rawY = 0;
-      let rawHead = 0;
-      let outageSec = 0;
-
-      localTimer = setInterval(() => {
-        const dt = 0.05;
-        t += dt;
-        const speed = 13.88;
-        const yaw = 0.02 * Math.sin(0.12 * t);
-        heading += yaw * dt;
-        dist += speed * dt;
-
-        refX += speed * dt * Math.cos(heading);
-        refY += speed * dt * Math.sin(heading);
-
-        rawHead += (yaw + 0.004) * dt;
-        rawX += (speed + 0.5) * dt * Math.cos(rawHead);
-        rawY += (speed + 0.5) * dt * Math.sin(rawHead);
-
-        let corrX = refX;
-        let corrY = refY;
-        let err = 0.2;
-
-        if (gnssOutageRef.current) {
-          outageSec += dt;
-          const baseFactor = nhcEnabledRef.current ? 0.036 : 0.085;
-          const noiseFactor = 0.004 * Math.sin(0.3 * t) + (Math.random() - 0.5) * 0.002;
-          const dynamicFactor = Math.max(0.015, baseFactor + noiseFactor);
-
-          corrX = refX + (outageSec * speed * dynamicFactor * Math.cos(heading - 0.2));
-          corrY = refY + (outageSec * speed * dynamicFactor * Math.sin(heading - 0.2));
-          err = Math.sqrt((corrX - refX)**2 + (corrY - refY)**2);
-        } else {
-          outageSec = 0;
-          corrX = refX + (Math.random() - 0.5) * 0.15;
-          corrY = refY + (Math.random() - 0.5) * 0.15;
-          err = Math.sqrt((corrX - refX)**2 + (corrY - refY)**2);
+    async function evaluate(file?: File) { if (!backend || !connectedServer) return; setBusy(true); setError(''); try {
+        let r;
+        if (file) {
+            const f = new FormData();
+            f.append('file', file);
+            r = await fetch(`${connectedServer}/api/evaluation/upload`, { method: 'POST', body: f });
         }
-
-        const evalBase = Math.max(gnssOutageRef.current ? outageSec * speed : dist, 10.0);
-        const drift = (err / evalBase) * 100;
-
-        const data: Telemetry = {
-          state: gnssOutageRef.current ? 'DEAD_RECKONING' : 'GNSS_AVAILABLE',
-          gnss_available: !gnssOutageRef.current,
-          distance_travelled: parseFloat(dist.toFixed(1)),
-          outage_duration_s: parseFloat(outageSec.toFixed(1)),
-          position_error_m: parseFloat(err.toFixed(2)),
-          drift_percentage: parseFloat(drift.toFixed(2)),
-          sih_target_met: drift < 10.0,
-          ref_pos: { x: refX, y: refY },
-          corrected_pos: { x: corrX, y: corrY },
-          map_matched_pos: { x: corrX, y: mapMatchEnabledRef.current ? refY : corrY },
-          raw_dr_pos: { x: rawX, y: rawY },
-          imu: {
-            ax: parseFloat((filteredSensorsRef.current ? 0.05 : 0.15 + (Math.random() - 0.5) * 0.05).toFixed(3)),
-            ay: parseFloat(((speed * yaw) + (filteredSensorsRef.current ? 0 : (Math.random() - 0.5) * 0.08)).toFixed(3)),
-            az: 9.807,
-            gx: 0.0001,
-            gy: 0.0001,
-            gz: parseFloat(yaw.toFixed(4))
-          },
-          orientation: {
-            pitch: parseFloat((1.2 + Math.sin(t * 0.2) * 0.8).toFixed(1)),
-            roll: parseFloat((0.4 + Math.cos(t * 0.15) * 0.5).toFixed(1)),
-            yaw: parseFloat(((heading * 180 / Math.PI) % 360).toFixed(1))
-          }
-        };
-        updateTelemetry(data);
-      }, 50);
+        else
+            r = await fetch(`${connectedServer}/api/evaluation/preset?preset_id=${recording}&duration=${duration}`);
+        const data = await r.json();
+        if (!r.ok)
+            throw Error(data.detail || 'Evaluation failed');
+        setResult(data);
+        setBackend(true);
+        log(`Measured replay completed • ${data.track_name}`);
     }
-
-    return () => {
-      if (ws) ws.close();
-      if (localTimer) clearInterval(localTimer);
-    };
-  }, [running]);
-
-  const updateTelemetry = (data: Telemetry) => {
-    setTelemetry(data);
-    trajectory.current.ref.push(data.ref_pos);
-    trajectory.current.corrected.push(data.corrected_pos);
-    trajectory.current.raw.push(data.raw_dr_pos);
-    if (data.map_matched_pos) trajectory.current.matched.push(data.map_matched_pos);
-
-    if (trajectory.current.ref.length > 200) {
-      trajectory.current.ref.shift();
-      trajectory.current.corrected.shift();
-      trajectory.current.raw.shift();
-      trajectory.current.matched.shift();
+    catch (e: any) {
+        setError(e.message === 'Failed to fetch' ? 'Start the Python backend to run a new evaluation. Saved measured results remain available below.' : e.message);
     }
-
-    sensorHistory.current.ax.push(data.imu?.ax ?? 0);
-    sensorHistory.current.ay.push(data.imu?.ay ?? 0);
-    sensorHistory.current.gz.push((data.imu?.gz ?? 0) * 15);
-    if (sensorHistory.current.ax.length > 80) {
-      sensorHistory.current.ax.shift();
-      sensorHistory.current.ay.shift();
-      sensorHistory.current.gz.shift();
-    }
-
-    if (activeTabRef.current === 'dashboard') renderTrajectoryCanvas();
-    if (activeTabRef.current === 'sensors') renderWaveformCanvas();
-  };
-
-  const renderTrajectoryCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.fillStyle = '#101216';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const refPts = trajectory.current.ref;
-    if (refPts.length < 2) return;
-
-    const currentPos = refPts[refPts.length - 1];
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const scale = 2.4;
-
-    const gridSpacing = 35;
-    const gridOffsetX = (centerX - currentPos.x * scale) % gridSpacing;
-    const gridOffsetY = (centerY + currentPos.y * scale) % gridSpacing;
-
-    ctx.strokeStyle = '#1a1f26';
-    ctx.lineWidth = 1;
-    for (let x = gridOffsetX; x < canvas.width; x += gridSpacing) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-    }
-    for (let y = gridOffsetY; y < canvas.height; y += gridSpacing) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-    }
-
-    const drawLine = (pts: any[], strokeColor: string, dashed = false) => {
-      if (pts.length < 2) return;
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 2.2;
-      ctx.setLineDash(dashed ? [5, 4] : []);
-      ctx.beginPath();
-      for (let i = 0; i < pts.length; i++) {
-        const x = centerX + (pts[i].x - currentPos.x) * scale;
-        const y = centerY - (pts[i].y - currentPos.y) * scale;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-    };
-
-    drawLine(trajectory.current.raw, '#ef4444');
-    drawLine(trajectory.current.ref, '#22c55e', true);
-    drawLine(trajectory.current.corrected, '#38bdf8');
-    if (mapMatchEnabledRef.current) drawLine(trajectory.current.matched, '#f59e0b');
-
-    ctx.fillStyle = '#38bdf8';
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, 4.0, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  };
-
-  const renderWaveformCanvas = () => {
-    const canvas = sensorWaveformRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.fillStyle = '#101216';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = '#1a1f26';
-    ctx.lineWidth = 1;
-    for (let x = 0; x < canvas.width; x += 35) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-    }
-    for (let y = 0; y < canvas.height; y += 22) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-    }
-
-    const midY = canvas.height / 2;
-    ctx.strokeStyle = '#2d3748';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(canvas.width, midY); ctx.stroke();
-
-    const drawWave = (data: number[], color: string) => {
-      if (data.length < 2) return;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      const step = canvas.width / 80;
-      data.forEach((val, idx) => {
-        const x = idx * step;
-        const y = midY - val * 45;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
-    };
-
-    drawWave(sensorHistory.current.ax, '#38bdf8');
-    drawWave(sensorHistory.current.ay, '#f59e0b');
-    drawWave(sensorHistory.current.gz, '#a855f7');
-  };
-
-  const handleToggleRun = async () => {
-    const nextRun = !running;
-    setRunning(nextRun);
-
-    if (nextRun) {
-      trajectory.current = { ref: [], corrected: [], raw: [], matched: [] };
-      sensorHistory.current = {
-        ax: new Array(80).fill(0),
-        ay: new Array(80).fill(0),
-        gz: new Array(80).fill(0)
-      };
-      setGnssOutage(false);
-      addLog("RUN_START: Clean kinematic buffer initialized.");
-      try {
-        await fetch('http://localhost:8000/api/simulation/start', { method: 'POST' });
-      } catch {}
-    } else {
-      addLog("RUN_HALT: Simulation paused.");
-    }
-  };
-
-  const handleToggleOutage = async () => {
-    const nextState = !gnssOutage;
-    setGnssOutage(nextState);
-    addLog(nextState ? "ALERT: GNSS Outage injected. Clamping to NHC constraints." : "CARRIER: GNSS Signal restored. EKF converging.");
-    try {
-      await fetch(`http://localhost:8000/api/simulation/outage?enable=${nextState}`, { method: 'POST' });
-    } catch {}
-  };
-
-  const handleToggleNhc = async (enabled: boolean) => {
-    setNhcEnabled(enabled);
-    addLog(`NHC: Non-holonomic constraint ${enabled ? 'ENABLED' : 'DISABLED'}.`);
-    try {
-      await fetch(`http://localhost:8000/api/simulation/toggle-nhc?enable=${enabled}`, { method: 'POST' });
-    } catch {}
-  };
-
-  const handleToggleMapMatch = async (enabled: boolean) => {
-    setMapMatchEnabled(enabled);
-    addLog(`MAP_MATCH: Centerline projection ${enabled ? 'ENABLED' : 'DISABLED'}.`);
-    try {
-      await fetch(`http://localhost:8000/api/simulation/toggle-map-matching?enable=${enabled}`, { method: 'POST' });
-    } catch {}
-  };
-
-  const handleLoadPreset = async (presetId: string) => {
-    setActivePreset(presetId);
-    setIsEvaluating(true);
-    addLog(`PRESET: Ingesting official IO-VNBD benchmark [${presetId.toUpperCase()}]...`);
-
-    try {
-      const res = await fetch(`http://localhost:8000/api/evaluation/preset?preset_id=${presetId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setEvalResults(data);
-        addLog(`EVAL_DONE: ${data.dataset_points} epochs evaluated. Drift = ${data.drift_percentage}%.`);
-        setIsEvaluating(false);
+    finally {
+        setBusy(false);
+    } }
+    function reset() { setGnssStatus('Searching for GPS position…'); setRawImu(null); demo.current = new Demo(); phone.current = new LocalEngine(); buffer.current = []; lastFix.current = null; liveOrigin.current = null; setOrigin(null); setRoads([]); setRoadName(''); imuPrevious.current = 0; fixVersion.current = -1; forward.current = [0, 0, 0]; correlation.current = [0, 0, 0]; setPacket(null); setPoints([]); setDenied(false); lastMode.current = ''; log('Session reset'); }
+    function toggleLive() { const bridge = (window as any).KinematiX; if (!bridge) {
+        setError('Live IMU capture is available in the Android app. Use the local demo in a desktop browser.');
         return;
-      }
-    } catch {}
-
-    setTimeout(() => {
-      const presets: Record<string, any> = {
-        urban_canyon: {
-          dataset_points: 105974,
-          total_distance_m: 4890.2,
-          outage_distance_m: 920.0,
-          rmse_m: 2.85,
-          mae_m: 2.15,
-          max_error_m: 5.82,
-          final_error_m: 45.0,
-          drift_percentage: 4.89,
-          sih_target_met: true,
-          track_name: "IO-VNBD Urban Canyon (S-M.csv)"
-        },
-        highway_motorway: {
-          dataset_points: 126510,
-          total_distance_m: 8200.0,
-          outage_distance_m: 1450.0,
-          rmse_m: 3.10,
-          mae_m: 2.45,
-          max_error_m: 6.25,
-          final_error_m: 72.5,
-          drift_percentage: 5.00,
-          sih_target_met: true,
-          track_name: "IO-VNBD High-Speed Motorway (S-Vw4.csv)"
-        },
-        country_roads: {
-          dataset_points: 51730,
-          total_distance_m: 2980.0,
-          outage_distance_m: 980.0,
-          rmse_m: 2.10,
-          mae_m: 1.65,
-          max_error_m: 4.55,
-          final_error_m: 29.7,
-          drift_percentage: 3.03,
-          sih_target_met: true,
-          track_name: "IO-VNBD Rural Track (S-S1.csv)"
+    } const next = !live; reset(); setLive(next); setRunning(next); if (next)
+        bridge.startSensors();
+    else
+        bridge.stopSensors(); log(next ? 'Phone sensors requested • acquire GNSS before driving' : 'Phone sensors stopped'); }
+    useEffect(() => {
+        const changed = () => setFullscreen(Boolean(document.fullscreenElement));
+        document.addEventListener('fullscreenchange', changed);
+        return () => document.removeEventListener('fullscreenchange', changed);
+    }, []);
+    async function toggleFullscreen() {
+        const bridge = (window as any).KinematiX;
+        if (bridge?.setFullscreen) {
+            bridge.setFullscreen(!fullscreen);
+            setFullscreen(!fullscreen);
+            return;
         }
-      };
-
-      const selected = presets[presetId] || presets.urban_canyon;
-      setEvalResults(selected);
-      setIsEvaluating(false);
-      addLog(`LOCAL_EVAL_DONE: ${selected.dataset_points} epochs synchronized. Drift = ${selected.drift_percentage}%.`);
-    }, 300);
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsEvaluating(true);
-    addLog(`INGEST: Processing custom CSV dataset [${file.name}]...`);
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await fetch('http://localhost:8000/api/evaluation/upload', {
-        method: 'POST',
-        body: formData
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setEvalResults(data);
-        addLog(`EVAL_DONE: ${data.dataset_points} epochs synchronized. Drift = ${data.drift_percentage}%.`);
-        setIsEvaluating(false);
-        return;
-      }
-    } catch {}
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        const lines = text.trim().split('\n');
-        const pointCount = Math.max(lines.length - 1, 1);
-        const simulatedDist = Math.round(pointCount * 0.12 * 10) / 10;
-        const outageDist = Math.round(simulatedDist * 0.22 * 10) / 10;
-        
-        let dynamicDrift = 4.89;
-        if (file.name.toLowerCase().includes('vw')) dynamicDrift = 5.00;
-        else if (file.name.toLowerCase().includes('s1')) dynamicDrift = 3.03;
-
-        setEvalResults({
-          dataset_points: pointCount,
-          total_distance_m: simulatedDist > 0 ? simulatedDist : 4890.2,
-          outage_distance_m: outageDist > 0 ? outageDist : 920.0,
-          rmse_m: 2.85,
-          mae_m: 2.15,
-          max_error_m: 5.82,
-          final_error_m: Math.round(outageDist * (dynamicDrift / 100) * 10) / 10,
-          drift_percentage: dynamicDrift,
-          sih_target_met: dynamicDrift < 10.0,
-          track_name: `Custom Ingestion: ${file.name}`
-        });
-        addLog(`EVAL_SUCCESS: ${pointCount} lines parsed. Drift = ${dynamicDrift}%.`);
-      } catch {
-        addLog("ERROR: Unable to parse file format.");
-      } finally {
-        setIsEvaluating(false);
-      }
-    };
-    reader.onerror = () => setIsEvaluating(false);
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
-  const getDcmMatrix = () => {
-    switch (alignmentMode) {
-      case 'A':
-        return [
-          [ "+1.0000", "+0.0000", "+0.0000" ],
-          [ "+0.0000", "+1.0000", "+0.0000" ],
-          [ "+0.0000", "+0.0000", "+1.0000" ]
-        ];
-      case 'B':
-        return [
-          [ "+0.9694", "+0.0000", "+0.2455" ],
-          [ "+0.0000", "+1.0000", "+0.0000" ],
-          [ "-0.2455", "+0.0000", "+0.9694" ]
-        ];
-      case 'C':
-        return [
-          [ "+0.7399", "-0.4695", "+0.4816" ],
-          [ "+0.3732", "+0.8805", "+0.2853" ],
-          [ "-0.5592", "-0.0616", "+0.8268" ]
-        ];
+        try {
+            if (document.fullscreenElement) await document.exitFullscreen();
+            else if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+            else setError('Fullscreen is available in the Android app or a supporting browser.');
+        } catch { setError('Fullscreen is unavailable in this browser window.'); }
     }
-  };
-
-  const isGnssLocked = telemetry !== null ? telemetry.gnss_available : !gnssOutage;
-
-  return (
-    <div style={{ backgroundColor: '#121418', color: '#d1d5db', height: '100vh', width: '100vw', fontFamily: 'Consolas, monospace', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box' }}>
-      
-      {/* Top Header */}
-      <header style={{ background: '#181b20', borderBottom: '1px solid #282c34', padding: '0.25rem 1.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.88rem', fontWeight: 900, color: '#f3f4f6', letterSpacing: '0.5px' }}>IDR-X</span>
-          <div style={{ background: '#121418', border: '1px solid #282c34', padding: '0.1rem 0.4rem', borderRadius: '2px', fontSize: '0.62rem' }}>
-            <span style={{ color: '#9ca3af' }}>TEAM: </span>
-            <strong style={{ color: '#f3f4f6' }}>ORIGIN X</strong>
-            <span style={{ color: '#374151', margin: '0 0.25rem' }}>|</span>
-            <span style={{ color: '#9ca3af' }}>ID: </span>
-            <strong style={{ color: '#f59e0b' }}>134028</strong>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-          <div style={{ 
-            padding: '0.15rem 0.4rem', 
-            borderRadius: '2px', 
-            fontSize: '0.6rem', 
-            fontWeight: 700, 
-            background: isGnssLocked ? '#052e16' : '#450a0a', 
-            color: isGnssLocked ? '#4ade80' : '#f87171', 
-            border: `1px solid ${isGnssLocked ? '#166534' : '#991b1b'}` 
-          }}>
-            {isGnssLocked ? 'GNSS: LOCKED' : 'GNSS: OUTAGE'}
-          </div>
-          <div style={{ padding: '0.15rem 0.4rem', borderRadius: '2px', fontSize: '0.6rem', fontWeight: 700, background: '#1f242d', color: '#93c5fd', border: '1px solid #374151' }}>
-            {telemetry ? telemetry.state : 'STANDBY'}
-          </div>
-          <button
-            onClick={() => setShowLogDrawer(!showLogDrawer)}
-            style={{
-              background: showLogDrawer ? '#2563eb' : '#1f242d',
-              color: '#f3f4f6',
-              border: '1px solid #374151',
-              padding: '0.15rem 0.45rem',
-              borderRadius: '2px',
-              fontSize: '0.6rem',
-              fontWeight: 700,
-              cursor: 'pointer'
-            }}
-          >
-            {showLogDrawer ? 'HIDE LOGS' : 'LOGS'}
-          </button>
-        </div>
-      </header>
-
-      {/* Tabs Toolbar */}
-      <nav style={{ background: '#15171c', borderBottom: '1px solid #23272f', display: 'flex', overflowX: 'auto', gap: '0.2rem', padding: '0.2rem 1.8rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
-        {(['dashboard', 'sensors', 'alignment', 'evaluation', 'architecture'] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={{
-              background: activeTab === tab ? '#222731' : 'transparent',
-              color: activeTab === tab ? '#f3f4f6' : '#6b7280',
-              border: activeTab === tab ? '1px solid #374151' : '1px solid transparent',
-              padding: '0.2rem 0.55rem',
-              borderRadius: '2px',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '0.65rem',
-              flexShrink: 0
-            }}
-          >
-            {tab.toUpperCase()}
-          </button>
-        ))}
-      </nav>
-
-      {/* Main Workspace Layout */}
-      <div style={{ flex: 1, padding: '0.35rem 1.8rem 0.5rem 1.8rem', display: 'flex', gap: '0.5rem', boxSizing: 'border-box', overflow: 'hidden' }}>
-        
-        {/* TAB 1: DASHBOARD */}
-        {activeTab === 'dashboard' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto', paddingBottom: '0.8rem' }}>
-            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.3rem 0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center', flexShrink: 0 }}>
-              <button
-                onClick={handleToggleRun}
-                style={{ background: running ? '#991b1b' : '#15803d', color: '#fff', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '2px', cursor: 'pointer', fontWeight: 700, fontSize: '0.65rem' }}
-              >
-                {running ? 'HALT RUN' : 'ENGAGE RUN'}
-              </button>
-              <button
-                onClick={handleToggleOutage}
-                disabled={!running}
-                style={{ background: gnssOutage ? '#15803d' : '#b45309', color: '#fff', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '2px', cursor: running ? 'pointer' : 'not-allowed', fontWeight: 700, fontSize: '0.65rem' }}
-              >
-                {gnssOutage ? 'RESTORE GNSS' : 'TRIGGER OUTAGE'}
-              </button>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.62rem', color: '#9ca3af', cursor: 'pointer' }}>
-                <input type="checkbox" checked={nhcEnabled} onChange={(e) => handleToggleNhc(e.target.checked)} />
-                NHC (v_lat ≈ 0)
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.62rem', color: '#9ca3af', cursor: 'pointer' }}>
-                <input type="checkbox" checked={mapMatchEnabled} onChange={(e) => handleToggleMapMatch(e.target.checked)} />
-                Map Matching
-              </label>
-            </div>
-
-            <div style={{ background: '#101216', border: '1px solid #23272f', borderRadius: '2px', padding: '0.35rem', flexShrink: 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem', fontSize: '0.62rem' }}>
-                <span style={{ color: '#93c5fd', fontWeight: 700 }}>GEOSPATIAL PROJECTION (FOLLOW CAMERA)</span>
-                <div style={{ display: 'flex', gap: '0.45rem', fontSize: '0.6rem' }}>
-                  <span style={{ color: '#22c55e' }}>-- Truth</span>
-                  <span style={{ color: '#ef4444' }}>- Raw DR</span>
-                  <span style={{ color: '#38bdf8' }}>- EKF</span>
-                  <span style={{ color: '#f59e0b' }}>- Matched</span>
-                </div>
-              </div>
-              <canvas ref={canvasRef} width={760} height={155} style={{ width: '100%', height: 'auto', maxHeight: '28vh', borderRadius: '2px', border: '1px solid #1a1e24', display: 'block' }} />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem', flexShrink: 0 }}>
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem 0.45rem' }}>
-                <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>TRAVELLED DISTANCE</div>
-                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#f3f4f6' }}>{telemetry?.distance_travelled ?? 0} m</div>
-              </div>
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem 0.45rem' }}>
-                <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>POSITION ERROR</div>
-                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#38bdf8' }}>{telemetry?.position_error_m ?? 0} m</div>
-              </div>
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem 0.45rem' }}>
-                <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>DRIFT ERROR ACCUM.</div>
-                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: (telemetry?.drift_percentage || 0) < 10 ? '#22c55e' : '#ef4444' }}>
-                  {telemetry?.drift_percentage ?? 0} %
-                </div>
-              </div>
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem 0.45rem' }}>
-                <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>PS168 TARGET (&lt;10%)</div>
-                <div style={{ 
-                  fontSize: '0.8rem', 
-                  fontWeight: 800, 
-                  color: (!running || (telemetry?.sih_target_met ?? true)) ? '#22c55e' : '#ef4444' 
-                }}>
-                  {!running ? 'READY (<10% MET)' : (telemetry?.sih_target_met ? 'PASS (<10% MET)' : 'OUT OF SPEC')}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: SENSORS */}
-        {activeTab === 'sensors' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto', paddingBottom: '0.8rem' }}>
-            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.3rem 0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#f3f4f6' }}>100 Hz IMU OSCILLOSCOPE TRACE</span>
-              <button
-                onClick={() => setFilteredSensors(!filteredSensors)}
-                style={{ background: filteredSensors ? '#2563eb' : '#374151', color: '#fff', border: 'none', padding: '0.15rem 0.4rem', borderRadius: '2px', cursor: 'pointer', fontSize: '0.58rem', fontWeight: 700 }}
-              >
-                {filteredSensors ? 'FILTER: LOW-PASS' : 'FILTER: RAW'}
-              </button>
-            </div>
-
-            <div style={{ background: '#101216', border: '1px solid #23272f', borderRadius: '2px', padding: '0.35rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem', fontSize: '0.62rem' }}>
-                <span style={{ color: '#9ca3af' }}>KINEMATIC TRACE (±2g / ±1 rad/s)</span>
-                <div style={{ display: 'flex', gap: '0.45rem', fontSize: '0.6rem' }}>
-                  <span style={{ color: '#38bdf8' }}>─ Ax</span>
-                  <span style={{ color: '#f59e0b' }}>─ Ay</span>
-                  <span style={{ color: '#a855f7' }}>─ Gz (x15)</span>
-                </div>
-              </div>
-              <canvas ref={sensorWaveformRef} width={760} height={145} style={{ width: '100%', height: 'auto', maxHeight: '25vh', borderRadius: '2px', border: '1px solid #1a1e24', display: 'block' }} />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
-                <div style={{ fontSize: '0.6rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.2rem' }}>ACCELEROMETER (m/s²)</div>
-                <div style={{ fontSize: '0.68rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Ax:</span><strong>{telemetry?.imu?.ax ?? 0.0}</strong></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Ay:</span><strong>{telemetry?.imu?.ay ?? 0.0}</strong></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Az:</span><strong>{telemetry?.imu?.az ?? 9.807}</strong></div>
-                </div>
-              </div>
-
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
-                <div style={{ fontSize: '0.6rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.2rem' }}>GYROSCOPE (rad/s)</div>
-                <div style={{ fontSize: '0.68rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Gx:</span><strong>{telemetry?.imu?.gx ?? 0.0}</strong></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Gy:</span><strong>{telemetry?.imu?.gy ?? 0.0}</strong></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Gz:</span><strong>{telemetry?.imu?.gz ?? 0.0}</strong></div>
-                </div>
-              </div>
-
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
-                <div style={{ fontSize: '0.6rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.2rem' }}>EULER ATTITUDE (deg)</div>
-                <div style={{ fontSize: '0.68rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Pitch (θ):</span><strong>{telemetry?.orientation?.pitch ?? 0.0}°</strong></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Roll (φ):</span><strong>{telemetry?.orientation?.roll ?? 0.0}°</strong></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6b7280' }}>Yaw (ψ):</span><strong>{telemetry?.orientation?.yaw ?? 0.0}°</strong></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: ALIGNMENT */}
-        {activeTab === 'alignment' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto', paddingBottom: '0.8rem' }}>
-            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
-              <div style={{ fontSize: '0.68rem', color: '#f3f4f6', fontWeight: 700 }}>PHONE-TO-VEHICLE ROTATION ESTIMATION (C_b^v)</div>
-              <p style={{ color: '#6b7280', fontSize: '0.6rem', margin: '2px 0 0 0' }}>Resolves dynamic rotation between phone body ($b$) and vehicle ($v$) frame.</p>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.45rem' }}>
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
-                <div style={{ fontSize: '0.62rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.25rem' }}>
-                  DCM MATRIX [MODE {alignmentMode}]
-                </div>
-                <div style={{ background: '#101216', border: '1px solid #23272f', padding: '0.35rem', borderRadius: '2px', fontSize: '0.68rem', lineHeight: '1.5' }}>
-                  {getDcmMatrix().map((row, idx) => (
-                    <div key={idx} style={{ color: '#38bdf8' }}>[ {row.join('  ')} ]</div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
-                <div style={{ fontSize: '0.62rem', color: '#93c5fd', fontWeight: 700, marginBottom: '0.25rem' }}>MOUNTING PRESETS</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  {(['A', 'B', 'C'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => {
-                        setAlignmentMode(mode);
-                        addLog(`ALIGNMENT: Mode ${mode} selected.`);
-                      }}
-                      style={{
-                        background: alignmentMode === mode ? '#1e293b' : '#121418',
-                        border: `1px solid ${alignmentMode === mode ? '#38bdf8' : '#282c34'}`,
-                        color: alignmentMode === mode ? '#38bdf8' : '#9ca3af',
-                        padding: '0.3rem',
-                        borderRadius: '2px',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        fontSize: '0.62rem'
-                      }}
-                    >
-                      <strong>MODE {mode}:</strong> {mode === 'A' ? 'Windshield (Level)' : mode === 'B' ? 'Dashboard (Pitch +14°)' : 'Center Console (3D Tilt)'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: EVALUATION */}
-        {activeTab === 'evaluation' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto', paddingBottom: '0.8rem' }}>
-            
-            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
-              <div style={{ fontSize: '0.68rem', color: '#f3f4f6', fontWeight: 700, marginBottom: '0.3rem' }}>
-                OFFICIAL IO-VNBD BENCHMARK TRACKS
-              </div>
-              
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
-                <button
-                  onClick={() => handleLoadPreset('urban_canyon')}
-                  disabled={isEvaluating}
-                  style={{
-                    background: activePreset === 'urban_canyon' ? '#2563eb' : '#1e242d',
-                    color: activePreset === 'urban_canyon' ? '#ffffff' : '#38bdf8',
-                    border: '1px solid #38bdf8',
-                    padding: '0.3rem 0.6rem',
-                    borderRadius: '2px',
-                    cursor: 'pointer',
-                    fontSize: '0.62rem',
-                    fontWeight: 700
-                  }}
-                >
-                  TRACK 1: URBAN CANYON (S-M)
-                </button>
-                <button
-                  onClick={() => handleLoadPreset('highway_motorway')}
-                  disabled={isEvaluating}
-                  style={{
-                    background: activePreset === 'highway_motorway' ? '#2563eb' : '#1e242d',
-                    color: activePreset === 'highway_motorway' ? '#ffffff' : '#38bdf8',
-                    border: '1px solid #38bdf8',
-                    padding: '0.3rem 0.6rem',
-                    borderRadius: '2px',
-                    cursor: 'pointer',
-                    fontSize: '0.62rem',
-                    fontWeight: 700
-                  }}
-                >
-                  TRACK 2: HIGHWAY (S-Vw4)
-                </button>
-                <button
-                  onClick={() => handleLoadPreset('country_roads')}
-                  disabled={isEvaluating}
-                  style={{
-                    background: activePreset === 'country_roads' ? '#2563eb' : '#1e242d',
-                    color: activePreset === 'country_roads' ? '#ffffff' : '#38bdf8',
-                    border: '1px solid #38bdf8',
-                    padding: '0.3rem 0.6rem',
-                    borderRadius: '2px',
-                    cursor: 'pointer',
-                    fontSize: '0.62rem',
-                    fontWeight: 700
-                  }}
-                >
-                  TRACK 3: COUNTRY ROAD (S-S1)
-                </button>
-              </div>
-
-              <div style={{ borderTop: '1px solid #23272f', paddingTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.58rem', color: '#6b7280' }}>OR TEST CUSTOM CSV:</span>
-                <input 
-                  type="file" 
-                  accept=".csv" 
-                  disabled={isEvaluating}
-                  onChange={handleFileUpload} 
-                  style={{ color: '#9ca3af', fontSize: '0.6rem' }} 
-                />
-              </div>
-
-              {isEvaluating && (
-                <div style={{ color: '#38bdf8', fontSize: '0.65rem', marginTop: '0.3rem', fontWeight: 700 }}>
-                  SYNCHRONIZING BENCHMARK EPOCHS & EXECUTING 15-STATE ES-EKF...
-                </div>
-              )}
-            </div>
-
-            {evalResults && (
-              <div>
-                {evalResults.track_name && (
-                  <div style={{ fontSize: '0.62rem', color: '#38bdf8', fontWeight: 700, marginBottom: '0.25rem' }}>
-                    ACTIVE EVALUATION: {evalResults.track_name.toUpperCase()}
-                  </div>
-                )}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem' }}>
-                  <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem' }}>
-                    <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>SYNCHRONIZED POINTS</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#f3f4f6' }}>{evalResults.dataset_points}</div>
-                  </div>
-                  <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem' }}>
-                    <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>POSITION RMSE</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#38bdf8' }}>{evalResults.rmse_m} m</div>
-                  </div>
-                  <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem' }}>
-                    <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>MEASURED DRIFT %</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: (evalResults.drift_percentage < 10) ? '#22c55e' : '#ef4444' }}>
-                      {evalResults.drift_percentage} %
-                    </div>
-                  </div>
-                  <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.35rem' }}>
-                    <div style={{ fontSize: '0.55rem', color: '#6b7280' }}>PS168 TARGET (&lt;10%)</div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: (evalResults.drift_percentage < 10) ? '#22c55e' : '#ef4444' }}>
-                      {evalResults.drift_percentage < 10 ? 'PASS (<10% MET)' : 'OUT OF SPEC'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 5: ARCHITECTURE */}
-        {activeTab === 'architecture' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto', paddingBottom: '1.5rem' }}>
-            <div style={{ background: '#181b20', border: '1px solid #282c34', borderRadius: '2px', padding: '0.45rem' }}>
-              <div style={{ fontSize: '0.68rem', color: '#f3f4f6', fontWeight: 700, marginBottom: '0.2rem' }}>PS168 FUSION SPECIFICATION</div>
-              <div style={{ background: '#101216', border: '1px solid #23272f', padding: '0.4rem', borderRadius: '2px', overflowX: 'auto' }}>
-                <pre style={{ margin: 0, color: '#9ca3af', fontFamily: 'monospace', fontSize: '0.55rem', lineHeight: '1.25' }}>{`
-Smartphone Sensors (IMU @ 100Hz, GNSS @ 10Hz)
-       │
-       ▼
-IMU Preprocessing (Low-pass + Bias Removal + Gravity Separation)
-       │
-       ▼
-Phone-to-Vehicle Alignment (DCM Matrix C_b^v)
-       │
-       ▼
-15-State Error-State Kalman Filter (ES-EKF)
-       │
-   ┌───┴──────────────────────────────────────────┐
-   ▼                                              ▼
-[Normal Operation]                       [GNSS Outage Blackout]
-GNSS Position/Velocity Updates           NHC (v_lat ≈ 0, v_vert ≈ 0) + Map Matching
-   └───┬──────────────────────────────────────────┘
-       ▼
-Continuous Vehicle Navigation Stream (Drift < 10% Distance)
-                `}</pre>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Collapsible Log Drawer */}
-        {showLogDrawer && (
-          <div style={{ width: '220px', background: '#15171c', border: '1px solid #23272f', borderRadius: '2px', padding: '0.4rem', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', borderBottom: '1px solid #282c34', paddingBottom: '0.15rem' }}>
-              <span style={{ fontSize: '0.62rem', color: '#9ca3af', fontWeight: 700 }}>EVENT LOG</span>
-              <span style={{ fontSize: '0.55rem', color: '#6b7280' }}>134028</span>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', fontSize: '0.58rem', color: '#6b7280', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-              {logs.map((log, idx) => (
-                <div key={idx} style={{ borderBottom: '1px solid #1a1e24', paddingBottom: '2px', wordBreak: 'break-all' }}>{log}</div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    const shown = tab === 'evidence'  && result ? result.trajectory : points;
+    const matched = packet && roads.length ? matchRoad([packet.corrected_pos.x, packet.corrected_pos.y], packet.heading_deg * Math.PI / 180, roads) : null;
+    return <div className={(window as any).KinematiX ? "app native-app" : "app"}><aside><a className="brand" href="#" onClick={e => e.preventDefault()}><span className="brand-icon">K<span>↗</span></span><span>Kinemati<span className="mint">X</span></span></a><div className="nav-label">WORKSPACE</div><nav>{[['cockpit', '◈', 'Navigation'], ['evidence', '⌁', 'Evaluation'], ['system', '▦', 'System']].map(([id, icon, label]) => <button className={tab === id ? 'selected' : ''} key={id} onClick={() => { setTab(id); setError(''); }}><span>{icon}</span>{label}<b>↗</b></button>)}</nav><div className="sidebar-note"><span className="eyebrow">SMART INDIA HACKATHON</span><p>ORIGIN <b>X</b></p><div className="mini-line"/><small>Team ID 134028<br />Problem Statement 26168</small></div><div className="side-status"><i className={backend ? 'dot' : 'dot amber'}/>{backend ? 'Evaluation engine ready' : 'Local demo ready'}<small>v5.8 · research prototype</small></div></aside>
+  <main><header><div className="breadcrumb">KINEMATIX <span>/</span> {tab === 'cockpit' ? 'NAVIGATION LAB' : tab === 'evidence' ? 'BENCHMARK STUDIO' : 'SYSTEM DESIGN'}</div><div className="header-right"><span className="team-signature">ORIGIN <b>X</b><small>TEAM ID 134028</small></span><button className="fullscreen-button" onClick={toggleFullscreen} aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"} aria-pressed={fullscreen}>{fullscreen ? "↙" : "↗"}<span>{fullscreen ? "Exit fullscreen" : "Fullscreen"}</span></button></div></header>
+  <section className="page-heading"><div><div className="eyebrow">{tab === 'cockpit' ? 'VEHICLE NAVIGATION' : tab === 'evidence' ? 'IO-VNBD DATASET REPLAY' : 'TECHNICAL OVERVIEW'}</div><h1>{tab === 'cockpit' ? 'Navigation console' : tab === 'evidence' ? 'Drive evaluation' : 'System architecture'}</h1><p>{tab === 'cockpit' ? 'Position, motion and GNSS status.' : tab === 'evidence' ? 'Compare estimated motion with a recorded reference.' : 'Sensor processing, model deployment and validation status.'}</p></div><div className="source-pill"><i className="dot"/>{live ? 'LIVE PHONE' : tab === 'evidence' ? 'RECORDED DATA' : 'SIMULATED DRIVE'}</div></section>
+  {error && <div className="error" role="alert">{error}<button onClick={() => setError('')} aria-label="Dismiss error">×</button></div>}
+  {tab === 'cockpit' && <><section className="panel live-sensors"><div className="sensor-heading"><h2>Phone sensors</h2><button onClick={toggleLive}>{live ? 'Stop phone capture' : 'Connect phone sensors'}</button></div>{live ? <><p role="status">{!rawImu ? 'Waiting for sensor samples…' : !packet ? `IMU receiving · ${gnssStatus}` : `IMU receiving · ${gnssStatus}`}</p><div className="raw-sensor-grid">{[['Accelerometer', rawImu?.acc, 'm/s²'], ['Gyroscope', rawImu?.gyro, 'rad/s']].map(([label, values, unit]) => <div key={label as string}><h3>{label as string} <small>{unit as string}</small></h3><div className="sensor-axes">{['X','Y','Z'].map((axis,i) => <span key={axis}>{axis} <b>{fmt((values as number[] | undefined)?.[i],3)}</b></span>)}</div></div>)}</div><small>Raw phone axes; accelerometer includes gravity. Speed is an estimate, not a raw sensor reading.</small></> : <p>Connect to see live accelerometer and gyroscope readings.</p>}</section><div className="metrics"><Metric label="TRACKING MODE" value={live && !packet ? 'WAITING FOR GNSS' : packet?.state.replaceAll('_', ' ') || 'READY'} sub={live ? 'Phone sensor stream' : 'Simulated sensor fusion'} state/><Metric label="FORWARD SPEED" value={fmt((packet?.speed_mps || 0) * 3.6)} unit="km/h" sub="Vehicle motion estimate"/><Metric label="POSITION ERROR" value={fmt(packet?.position_error_m)} unit="m" sub={live ? 'No independent truth on live phone' : 'Against synthetic reference'}/><Metric label="OUTAGE DURATION" value={fmt(packet?.outage_duration_s || 0)} unit="s" sub="Detected after 1.5 s without fixes"/></div>
+    <div className="cockpit-grid"><div className="panel map-panel"><div className="panel-header"><div><span className="eyebrow">TRAJECTORY VIEW</span><h2>EKF vehicle trajectory</h2></div><span className="badge">{live && !packet ? 'WAITING FOR GNSS' : running ? '● TRACKING' : '○ PAUSED'} · 10 Hz</span></div><Plot points={shown} roads={roads} matched={matched}/><div className="map-bottom"><div className="legend"><span className="mint">━ EKF trajectory</span><span className="blue">{!live && '┄ Synthetic reference'}</span>{!live && <span className="coral">━ Constant-speed baseline</span>}</div><span>{fmt(packet?.distance_travelled || 0, 0)} m travelled</span></div><div className="controls"><button className="primary" onClick={() => setRunning(!running)} disabled={live}>{running ? 'Ⅱ Pause' : '▶ Start drive'}</button><button className={denied ? 'danger active' : 'danger'} onClick={() => { setDenied(!denied); demo.current.denied = !denied; log(!denied ? 'GNSS feed disabled' : 'GNSS feed restored'); }}>{denied ? '↗ Restore GNSS' : '⊘ Simulate blackout'}</button><button onClick={() => { demo.current.shock = true; }} disabled={live || !running}>⌁ Inject pothole</button><button className="icon-button" onClick={reset} title="Reset session">↺</button></div></div>
+    <div className="right-stack"><div className="panel signal-panel"><div className="eyebrow">SIGNAL HEALTH</div><div className="signal-title"><i className={denied ? 'dot amber' : 'dot'}/><h2>{denied ? 'Inertial continuity' : 'GNSS + inertial'}</h2></div><div className="signal-bars">{[12, 22, 31, 43, 53, 62, 72, 82, 90, 96, 100, 100].map((v, i) => <i key={i} style={{ height: v + '%', opacity: denied ? .15 : 1 }}/>)}</div><div className="pair"><span>Heading</span><b>{fmt(packet?.heading_deg || 0)}°</b></div><div className="pair"><span>Uncertainty indicator</span><b>± {fmt(packet?.uncertainty_m)} m</b></div><p className="fine">Uncertainty is a model estimate, not an accuracy guarantee.</p></div><div className="panel sensor-panel"><div className="eyebrow">MOTION OBSERVER</div><div className="pair"><h2>Forward acceleration</h2><b className="mint">{fmt(packet?.imu.ax, 2)}</b></div><Spark values={sensorHistory}/><p className="fine">m/s² · shock gating suppresses large impulses</p></div><div className="callout"><span>◉</span><div><b>Session source</b><p>{live ? 'Live phone IMU. Navigation starts after a usable GNSS speed and heading fix.' : 'This drive uses simulated sensors. Open Evaluation for measured IO-VNBD results.'}</p></div></div></div></div>
+    <div className="bottom-grid"><div className="panel"><div className="panel-header"><h2>Session events</h2><span className="eyebrow">LATEST FIRST</span></div><div className="events">{events.slice(0, 5).map((e, i) => <div key={i}><i className="dot"/>{e}</div>)}</div></div><div className="panel integrations"><h2>Phone & data</h2><p>Connect the Android sensors or inspect an offline road extract.</p><div className="inline-actions"><button onClick={toggleLive}>{live ? 'Stop phone capture' : 'Connect phone sensors'}</button><button onClick={() => save('kinematix-session.json', { source: packet?.source, points, events })} disabled={!points.length}>Export session ↗</button></div><label className="file-label">＋ Import road GeoJSON<input type="file" accept=".json,.geojson" onChange={async (e) => { const f = e.target.files?.[0]; if (!f)
+            return; try {
+            const o = origin;
+            if (!o)
+                throw Error('Acquire a phone GNSS fix first, to establish the road-map origin.');
+            setRoads(roadsFromGeoJSON(JSON.parse(await f.text()), o));
+            setRoadName(f.name);
+        }
+        catch (x: any) {
+            setError(x.message);
+        } }}/></label><small>{roadName || 'Offline matching is gated by distance, heading, and ambiguity.'}</small></div></div></>}
+  {tab === 'evidence' && <>{isAndroid && <div className="panel result-details"><h2>Desktop evaluation server</h2><p>Optional: connect your phone and laptop to the same Wi-Fi. Start the backend on the laptop with network access, then enter its address below.</p><label htmlFor="evaluation-server">Server address</label><div className="server-connect"><input id="evaluation-server" type="url" placeholder="http://192.168.1.10:8000" value={serverAddress} disabled={busy || checkingServer} onChange={e => { setServerAddress(e.target.value); setBackend(false); setConnectedServer(''); setServerMessage('Requires connection to the desktop evaluation server.'); }}/><button disabled={busy || checkingServer} onClick={connectServer}>{checkingServer ? 'Checking…' : 'Connect server'}</button></div><p role="status">{serverMessage}</p><label className="file-label" aria-disabled={!backend || busy}>Upload CSV · backend required<input disabled={!backend || busy} type="file" accept=".csv" onChange={e => { if (e.target.files?.[0]) evaluate(e.target.files[0]); e.target.value = ''; }}/></label><p className="fine">Saved examples and live navigation work offline.</p></div>}{!isAndroid && !backend && <p role="status" className="evaluation-help">Local evaluation engine unavailable. Start scripts/Start-KinematiX.ps1; this page reconnects automatically. Saved examples remain available.</p>}{!isAndroid && <div className="panel evaluation-controls"><div><label>RECORDING</label><select value={recording} onChange={e => setRecording(e.target.value)}><option value="saved_example">Selected saved example · below 10%</option><option value="test">S-Vw1 · stationary calibration</option><option value="held_out">S-S1 · development holdout</option><option value="mixed">S-M · training drive</option><option value="motorway">S-Vw4 · training drive</option></select></div><div><label>GNSS BLACKOUT</label><select disabled={recording === 'saved_example'} value={recording === 'saved_example' ? 10 : duration} onChange={e => setDuration(+e.target.value)}>{[10, 30, 60, 120].map(n => <option key={n} value={n}>{n} seconds</option>)}</select></div><button className="primary" disabled={busy || (recording === 'saved_example' ? !report : !backend)} onClick={() => recording === 'saved_example' ? setResult(report.runs.find((r: any) => r.split === 'development validation' && r.sih_target_met && r.drift_percentage < 10) || report.runs[0]) : evaluate()}>{busy ? 'Evaluating…' : recording === 'saved_example' ? 'Open saved example ↗' : 'Run measured replay ↗'}</button><label className="file-label" aria-disabled={!backend || busy}>Upload CSV<input disabled={busy || !backend} type="file" accept=".csv" onChange={e => e.target.files?.[0] && evaluate(e.target.files[0])}/></label></div>}
+    {!result && <div className="panel empty-state"><span className="empty-icon">⌁</span><h2>Saved drive evaluation</h2><p>Explore a prerecorded trajectory offline. The default is a selected example below 10% drift, not a summary of overall performance. All recorded runs are available below.</p>{report && <button onClick={() => setResult(report.runs.find((r: any) => r.split === 'development validation' && r.sih_target_met && r.drift_percentage < 10) || report.runs.find((r: any) => r.sih_target_met && r.drift_percentage < 10) || report.runs[0])}>Open saved example ↗</button>}</div>}
+    {result && <><div className="result-title"><h2>{result.track_name} <span className="tag">{result.split}</span></h2><span className={result.sih_target_met ? 'result-pass' : 'result-fail'}>{result.sih_target_met ? 'BELOW 10% ON THIS RUN' : 'TARGET NOT MET ON THIS RUN'}</span></div><div className="metrics"><Metric label="ENDPOINT DRIFT" value={fmt(result.drift_percentage, 2)} unit="%" sub="Endpoint error / reference distance"/><Metric label="POSITION RMSE" value={fmt(result.rmse_m, 2)} unit="m" sub="Across the complete outage"/><Metric label="OUTAGE DISTANCE" value={fmt(result.outage_distance_m, 0)} unit="m" sub={`${result.outage_duration_s} s · start ${fmt(result.start_s, 0)} s`}/><Metric label="PROCESSING P95" value={fmt(result.p95_processing_ms, 2)} unit="ms" sub="Measured desktop runtime"/></div><div className="panel"><div className="panel-header"><h2>Estimated vs reference trajectory</h2><button onClick={() => save('kinematix-evaluation.json', result)}>Download evidence ↓</button></div><Plot points={result.trajectory}/><div className="map-bottom legend"><span className="mint">━ EKF trajectory</span><span className="blue">┄ GPS reference</span><span className="coral">━ Constant-speed + gyro</span></div></div><div className="bottom-grid"><div className="panel result-details"><h2>Run integrity</h2><div className="pair"><span>Maximum position error</span><b>{fmt(result.max_error_m, 2)} m</b></div><div className="pair"><span>Endpoint error</span><b>{fmt(result.final_error_m, 2)} m</b></div><div className="pair"><span>Baseline endpoint error</span><b>{fmt(result.baseline_final_error_m, 2)} m</b></div><div className="pair"><span>Learned speed update</span><b>{result.ai_enabled ? 'Enabled' : 'Unavailable'}</b></div><small>Dataset SHA-256: {result.sha256?.slice(0, 24)}…</small></div><div className="panel result-details"><h2>Evaluation notes</h2><p>Selected runs describe individual blackout windows, not overall benchmark performance. One reproducible blackout on a real recording. It does not establish lane-level accuracy or performance across all vehicles.</p>{result.limitations?.map((s: string) => <p className="fine" key={s}>• {s}</p>)}</div></div></>}
+    {report && <div className="panel report-table">{report.rejected_recordings?.map((r: any) => <p className="rejected-note" key={r.recording}>{r.recording} excluded: {r.reason}</p>)}<div className="panel-header"><h2>Recorded-drive results</h2><span className="eyebrow">SAVED BENCHMARKS · NOT THIS PHONE SESSION</span></div><p className="evaluation-help">Each result replays an IO-VNBD recording with GPS withheld for the listed blackout. Drift is endpoint position error divided by distance travelled; the target is below 10%. Training drives were used to fit the model; development holdout drives were used to assess it. Inspect opens the trajectory and detailed scores. Repeated windows are not independent drives.</p><details className="all-results"><summary>Browse all {report.runs.length} recorded runs</summary><table><thead><tr><th>Drive</th><th>Split</th><th>Blackout</th><th>Drift</th><th>Target</th><th /></tr></thead><tbody>{report.runs.map((r: any, i: number) => <tr key={i}><td data-label="Drive">{r.track_name}</td><td data-label="Data split">{r.split}</td><td data-label="Blackout">{r.outage_duration_s}s</td><td data-label="Endpoint drift">{fmt(r.drift_percentage, 2)}%</td><td data-label="Target">{r.sih_target_met ? 'Pass' : 'Not met'}</td><td data-label="Details"><button onClick={() => setResult(r)}>Inspect ↗</button></td></tr>)}</tbody></table></details></div>}</>}
+  {tab === 'system' && <><section className="panel system-flow" aria-label="Navigation architecture"><h2>On-device navigation pipeline</h2><div className="flow-inputs"><div className="flow-node"><b>Phone IMU</b><span>Accelerometer · gyroscope · gravity</span><small>50 Hz requested sensor callbacks</small></div><div className="flow-node"><b>GNSS receiver</b><span>Position · speed · bearing · accuracy</span><small>1 Hz requested location updates</small></div></div><div className="flow-inputs"><div><div className="flow-arrow">↓</div><div className="flow-node"><b>Motion features + learned speed</b><span>Latest IMU sample forwarded at 10 Hz</span><small>Two-second feature window · local JSON model</small></div></div><div><div className="flow-arrow">↓</div><div className="flow-node"><b>GNSS measurement checks</b><span>Permissions · fix quality · availability</span><small>Accepted fixes correct the EKF</small></div></div></div><div className="flow-arrow">↘ &nbsp; ↙</div><div className="flow-node flow-ekf"><b>Five-state Extended Kalman Filter</b><span>East · north · speed · heading · gyro bias</span><small>10 Hz scheduled IMU processing · covariance and innovation gates</small></div><div className="flow-arrow">↓</div><div className="flow-node"><b>EKF trajectory + uncertainty</b><span>GPS available: fusion · GPS absent: inertial propagation</span></div><p className="fine">Offline roads → optional display overlay only; map matching does not currently correct the EKF.</p><p className="fine">Rates above are configured requests or scheduling targets, not measured device guarantees. Actual callbacks depend on hardware and Android scheduling. IMU forwarding uses the latest sample; it is not a 50 Hz navigation solution.</p><div className="flow-replay"><b>Desktop evaluation</b><p>IO-VNBD CSV → timing and calibration checks → Python EKF → reference-only scoring → saved report</p><small>Replay grid: 10 Hz. Current recordings change coordinates about every 9 s; this is not a measured GNSS receiver update rate. 200 Hz external-IMU performance is not validated.</small></div></section><div className="architecture">{[['01', 'Sense', 'Accelerometer · gyroscope · gravity · GNSS', 'SI units and timestamps; no vehicle CAN dependency.'], ['02', 'Understand', 'Causal two-second IMU windows', 'A compact learned speed prior, with pre-outage residual calibration.'], ['03', 'Propagate', 'Vehicle motion + uncertainty', 'Five-state EKF running locally in Python and the Android WebView.'], ['04', 'Display', 'Trajectory and optional road overlay', 'Ambiguous road matches are withheld; no map correction enters the EKF.']].map(([n, t, s, d]) => <div className="panel" key={n}><span className="step-number">{n}</span><h2>{t}</h2><b>{s}</b><p>{d}</p></div>)}</div><div className="bottom-grid"><div className="panel result-details"><div className="eyebrow">MODEL CARD</div><h2>On-device speed model</h2><div className="pair"><span>Architecture</span><b>{model?.trees?.length || 0}-tree ExtraTrees</b></div><div className="pair"><span>Input / window</span><b>4 IMU signals / 2 seconds</b></div><div className="pair"><span>Deployment</span><b>Portable JSON forest</b></div><div className="pair"><span>Training drives</span><b>{model?.train_recordings?.length || 0} recordings · drivers B/E</b></div><div className="pair"><span>Held-out drive</span><b>6 validation recordings · driver A</b></div><p>Absolute speed from IMU is not always observable. The learned prior is anchored using the last available GNSS speed and must be validated on new vehicles and mounts.</p></div><div className="panel result-details"><div className="eyebrow">PROTOTYPE BOUNDARIES</div><h2>Validation status</h2><p>Local Android EKF and sensor capture are implemented. Build checks and Python/JavaScript parity pass; independent phone drift performance remains unverified.</p><p>Lane-level performance, arbitrary remount recovery, sustained background operation, and 200 Hz FOG performance are not certified.</p><p>Road matching is an optional visualization layer. It never uses the evaluation reference trajectory and never modifies reported benchmark scores.</p><a href="https://github.com/onyekpeu/IO-VNBD" target="_blank" rel="noreferrer">IO-VNBD source & attribution ↗</a></div></div></>}
+  <footer><span>KinematiX / ORIGIN X / Team ID 134028</span><span>SIH 26168 / RESEARCH PROTOTYPE</span></footer></main></div>;
 }
+function Metric({ label, value, unit, sub, state = false }: any) { return <div className="metric"><div className="eyebrow">{label}</div><div className={state ? 'metric-value mode' : 'metric-value'}>{state && <i className="dot"/>}{value}<span>{unit}</span></div><small>{sub}</small></div>; }

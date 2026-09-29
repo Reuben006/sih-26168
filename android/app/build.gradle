@@ -4,15 +4,15 @@ plugins {
 }
 
 android {
-    namespace 'com.originx.idrx.navigation'
+    namespace 'com.originx.kinematix'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.originx.idrx.navigation"
+        applicationId "com.originx.kinematix"
         minSdk 26
         targetSdk 34
-        versionCode 6
-        versionName "4.0"
+        versionCode 22
+        versionName "5.8"
     }
 
     buildTypes {

@@ -1,0 +1,14 @@
+{
+  "training_recordings": [
+    "S-M.csv",
+    "S-Vw4.csv"
+  ],
+  "held_out_recording": "S-S1.csv",
+  "training_windows": 35800,
+  "held_out_windows": 10346,
+  "speed_mae_mps": 3.726153158456861,
+  "speed_rmse_mps": 5.075208558316627,
+  "constant_train_mean_mae_mps": 7.807218538132476,
+  "model_bytes": 268846,
+  "note": "Training labels derive from GNSS displacement/time; no CAN inputs. S-S1 is excluded from model fitting but used during fusion development, so it is not a blind final test."
+}

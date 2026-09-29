@@ -1,0 +1,444 @@
+{
+  "source_document": "https://pure.coventry.ac.uk/ws/portalfiles/portal/40741559/Binder8.pdf",
+  "method": "Read-only diagnostics and fixed-window AI-on/AI-off/constant-speed comparisons; no parameter search.",
+  "recordings": [
+    {
+      "recording": "S-M.csv",
+      "sha256": "26a1ee080da4db98e175e15d6fec631e6f8c285c13817d9d74ecc90ed280d103",
+      "rows": 105974,
+      "median_imu_dt_s": 0.09999999999990905,
+      "clock_reset_rows": [
+        44226
+      ],
+      "elapsed_vs_date_p99_disagreement_s": 5.675182546127644e-13,
+      "longest_segment_rows": 52506,
+      "selected_segment_start_row": 53468,
+      "selected_segment_end_row": 105973,
+      "retained_source_fraction": 0.49546115084832126,
+      "distinct_coordinates": 546,
+      "median_coordinate_change_interval_s": 9.0,
+      "median_displacement_speed_over_raw_speed": 0.9945295211563917,
+      "speed_comparison_intervals": 473,
+      "gravity_mean_mps2": [
+        -0.00014959518372430954,
+        -0.0002231273708645522,
+        9.806492526472256
+      ],
+      "gravity_std_mps2": [
+        0.026986950945445898,
+        0.033723275340734514,
+        0.009823515077498337
+      ],
+      "gyro_column_order": [
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "gyro_mean_radps": [
+        0.0011782899579142045,
+        -0.018422703682035087,
+        -0.0020449449865061107
+      ],
+      "gyro_std_radps": [
+        0.07765614590747964,
+        0.17446545745064632,
+        0.09439194751396296
+      ],
+      "linear_acceleration_mean_mps2": [
+        -0.17367930718855665,
+        -0.0699537556381762,
+        0.04773359125823359
+      ],
+      "linear_acceleration_std_mps2": [
+        1.2442112902203761,
+        1.2711103787024625,
+        0.6308531308648673
+      ],
+      "source_pointer_matches": [
+        "Synchronised V abd S datasets\\Categorised IOVNB Dataset\\M (Driver B)\\S-M.csv",
+        "Unsynchronised V and S Dataset\\Uncategorised IOVNB (V and S) Dataset\\S-Dataset\\S-M.csv"
+      ]
+    },
+    {
+      "recording": "S-S1.csv",
+      "sha256": "c730b4527bbbe73375f7d2ecdb5ebd902fcde80d5fd68526b30615d6a57dad42",
+      "rows": 51746,
+      "median_imu_dt_s": 0.09999999999990905,
+      "clock_reset_rows": [],
+      "elapsed_vs_date_p99_disagreement_s": 5.675182546127644e-13,
+      "longest_segment_rows": 51746,
+      "selected_segment_start_row": 0,
+      "selected_segment_end_row": 51745,
+      "retained_source_fraction": 1.0,
+      "distinct_coordinates": 532,
+      "median_coordinate_change_interval_s": 9.0,
+      "median_displacement_speed_over_raw_speed": 0.9659475784124019,
+      "speed_comparison_intervals": 428,
+      "gravity_mean_mps2": [
+        -0.00017001700614540182,
+        3.469833417075732e-05,
+        9.80654547791774
+      ],
+      "gravity_std_mps2": [
+        0.01949274661583946,
+        0.0229215237262951,
+        0.00017665335781897145
+      ],
+      "gyro_column_order": [
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "gyro_mean_radps": [
+        0.0025491728829281648,
+        -0.007248550612607759,
+        0.0021920515595408325
+      ],
+      "gyro_std_radps": [
+        0.05147651945146503,
+        0.141651181136573,
+        0.09986689783161744
+      ],
+      "linear_acceleration_mean_mps2": [
+        0.04245171414215596,
+        0.06220014107370534,
+        0.04087230317319257
+      ],
+      "linear_acceleration_std_mps2": [
+        1.0569752559512051,
+        1.0617285699772647,
+        0.5131638251224573
+      ],
+      "source_pointer_matches": [],
+      "official_copy_comparison": {
+        "official_sha256": "e79a2eea18143b825438f9a11c7d724a97c9e18329776defd4d9291d03d4aaca",
+        "header_differs": true,
+        "data_rows_byte_identical": true
+      }
+    },
+    {
+      "recording": "S-Vw4.csv",
+      "sha256": "0d79ef3cd96f48b611e5da7dd14f4cb6ed0f1f747d247d26847918545440b9d3",
+      "rows": 126526,
+      "median_imu_dt_s": 0.1000000000003638,
+      "clock_reset_rows": [],
+      "elapsed_vs_date_p99_disagreement_s": 1.4551970739518083e-12,
+      "longest_segment_rows": 126526,
+      "selected_segment_start_row": 0,
+      "selected_segment_end_row": 126525,
+      "retained_source_fraction": 1.0,
+      "distinct_coordinates": 1340,
+      "median_coordinate_change_interval_s": 9.0,
+      "median_displacement_speed_over_raw_speed": 0.9984732613041756,
+      "speed_comparison_intervals": 1235,
+      "gravity_mean_mps2": [
+        0.0002993202978044022,
+        -0.00015377629894251186,
+        9.80643788627871
+      ],
+      "gravity_std_mps2": [
+        0.04020649744339332,
+        0.037665375234090595,
+        0.00029353761648919044
+      ],
+      "gyro_column_order": [
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "gyro_mean_radps": [
+        0.0007964347248786792,
+        -0.004097990136414711,
+        -0.0006851730079193184
+      ],
+      "gyro_std_radps": [
+        0.22351707702247708,
+        0.33185241214539307,
+        0.1449049867714045
+      ],
+      "linear_acceleration_mean_mps2": [
+        0.14773918720262672,
+        -0.1759327086922858,
+        0.013233639726222551
+      ],
+      "linear_acceleration_std_mps2": [
+        2.4682031245658345,
+        2.186263391857433,
+        1.1840125604889375
+      ],
+      "source_pointer_matches": [
+        "Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw04\\S-Vw4.csv",
+        "Unsynchronised V and S Dataset\\Uncategorised IOVNB (V and S) Dataset\\S-Dataset\\S-Vw4.csv"
+      ]
+    },
+    {
+      "recording": "S-Vw1.csv",
+      "sha256": "41fb71ae3223748b2c0513d5b58338f92f25c85a5dd4e2816a932b263cf5f05b",
+      "rows": 20476,
+      "median_imu_dt_s": 0.10000000000000142,
+      "clock_reset_rows": [],
+      "elapsed_vs_date_p99_disagreement_s": 1.6006640457533194e-13,
+      "longest_segment_rows": 20476,
+      "selected_segment_start_row": 0,
+      "selected_segment_end_row": 20475,
+      "retained_source_fraction": 1.0,
+      "distinct_coordinates": 1,
+      "median_coordinate_change_interval_s": null,
+      "median_displacement_speed_over_raw_speed": null,
+      "speed_comparison_intervals": 0,
+      "gravity_mean_mps2": [
+        0.0001271635084977535,
+        -4.413948036725935e-05,
+        9.806594881816002
+      ],
+      "gravity_std_mps2": [
+        0.005495371845817407,
+        0.0030422203801912075,
+        2.2344964102440248e-05
+      ],
+      "gyro_column_order": [
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "gyro_mean_radps": [
+        -0.0020844793905059607,
+        0.004411247313928515,
+        -0.0018930601680015565
+      ],
+      "gyro_std_radps": [
+        0.028670917519431842,
+        0.029276843213230968,
+        0.01385661180637537
+      ],
+      "linear_acceleration_mean_mps2": [
+        -0.010330660285211988,
+        -0.025847983004493185,
+        0.03935549912092256
+      ],
+      "linear_acceleration_std_mps2": [
+        0.2848593806135809,
+        0.2705446608071265,
+        0.09302208659764329
+      ],
+      "source_pointer_matches": [
+        "Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw01\\S-Vw1.csv",
+        "Unsynchronised V and S Dataset\\Uncategorised IOVNB (V and S) Dataset\\S-Dataset\\S-Vw1.csv"
+      ],
+      "role": "stationary calibration (paper Table A4-1)",
+      "stationary_check": {
+        "calibration_samples": 600,
+        "calibration_duration_s": 59.9,
+        "test_samples": 19876,
+        "test_mean_residual_radps": [
+          -0.0030515648353122626,
+          0.008040522170792238,
+          -0.0010838188770376331
+        ],
+        "residual_integrated_angle_deg": [
+          -347.4100981083303,
+          915.6659322821333,
+          -123.45027149106882
+        ],
+        "note": "Bias estimated from first 60 s; remaining stationary samples are an independent within-recording check. No moving-drive tuning."
+      }
+    }
+  ],
+  "ablations": [
+    {
+      "recording": "S-S1.csv",
+      "start_s": 1045.1000000000001,
+      "duration_s": 10.0,
+      "distance_m": 77.9,
+      "ai_endpoint_m": 12.516,
+      "no_ai_endpoint_m": 77.6,
+      "constant_speed_endpoint_m": 71.91,
+      "ai_improves_over_no_ai": true,
+      "ai_improves_over_constant_speed": true,
+      "gyro_projection_norm": 1.019582454289558,
+      "speed_anchor_offset_mps": -3.3029078516381993
+    },
+    {
+      "recording": "S-S1.csv",
+      "start_s": 1045.1000000000001,
+      "duration_s": 30.0,
+      "distance_m": 302.5,
+      "ai_endpoint_m": 43.635,
+      "no_ai_endpoint_m": 295.351,
+      "constant_speed_endpoint_m": 281.876,
+      "ai_improves_over_no_ai": true,
+      "ai_improves_over_constant_speed": true,
+      "gyro_projection_norm": 1.019582454289558,
+      "speed_anchor_offset_mps": -3.3029078516381993
+    },
+    {
+      "recording": "S-S1.csv",
+      "start_s": 1045.1000000000001,
+      "duration_s": 60.0,
+      "distance_m": 621.51,
+      "ai_endpoint_m": 139.868,
+      "no_ai_endpoint_m": 597.483,
+      "constant_speed_endpoint_m": 570.373,
+      "ai_improves_over_no_ai": true,
+      "ai_improves_over_constant_speed": true,
+      "gyro_projection_norm": 1.019582454289558,
+      "speed_anchor_offset_mps": -3.3029078516381993
+    },
+    {
+      "recording": "S-S1.csv",
+      "start_s": 1817.1000000000001,
+      "duration_s": 10.0,
+      "distance_m": 82.75,
+      "ai_endpoint_m": 37.059,
+      "no_ai_endpoint_m": 7.157,
+      "constant_speed_endpoint_m": 14.7,
+      "ai_improves_over_no_ai": false,
+      "ai_improves_over_constant_speed": false,
+      "gyro_projection_norm": 1.2156748032900058,
+      "speed_anchor_offset_mps": 0.6450368003108853
+    },
+    {
+      "recording": "S-S1.csv",
+      "start_s": 1817.1000000000001,
+      "duration_s": 30.0,
+      "distance_m": 157.68,
+      "ai_endpoint_m": 111.741,
+      "no_ai_endpoint_m": 333.346,
+      "constant_speed_endpoint_m": 72.338,
+      "ai_improves_over_no_ai": true,
+      "ai_improves_over_constant_speed": false,
+      "gyro_projection_norm": 1.2156748032900058,
+      "speed_anchor_offset_mps": 0.6450368003108853
+    },
+    {
+      "recording": "S-S1.csv",
+      "start_s": 1817.1000000000001,
+      "duration_s": 60.0,
+      "distance_m": 496.01,
+      "ai_endpoint_m": 307.364,
+      "no_ai_endpoint_m": 1435.095,
+      "constant_speed_endpoint_m": 190.769,
+      "ai_improves_over_no_ai": true,
+      "ai_improves_over_constant_speed": false,
+      "gyro_projection_norm": 1.2156748032900058,
+      "speed_anchor_offset_mps": 0.6450368003108853
+    },
+    {
+      "recording": "S-S1.csv",
+      "start_s": 3371.1000000000004,
+      "duration_s": 10.0,
+      "distance_m": 30.16,
+      "ai_endpoint_m": 6.538,
+      "no_ai_endpoint_m": 54.231,
+      "constant_speed_endpoint_m": 19.08,
+      "ai_improves_over_no_ai": true,
+      "ai_improves_over_constant_speed": true,
+      "gyro_projection_norm": 0.8399795222733898,
+      "speed_anchor_offset_mps": -11.155596155882552
+    },
+    {
+      "recording": "S-S1.csv",
+      "start_s": 3371.1000000000004,
+      "duration_s": 30.0,
+      "distance_m": 39.66,
+      "ai_endpoint_m": 15.677,
+      "no_ai_endpoint_m": 152.239,
+      "constant_speed_endpoint_m": 106.315,
+      "ai_improves_over_no_ai": true,
+      "ai_improves_over_constant_speed": true,
+      "gyro_projection_norm": 0.8399795222733898,
+      "speed_anchor_offset_mps": -11.155596155882552
+    },
+    {
+      "recording": "S-S1.csv",
+      "start_s": 3371.1000000000004,
+      "duration_s": 60.0,
+      "distance_m": 202.15,
+      "ai_endpoint_m": 78.984,
+      "no_ai_endpoint_m": 260.453,
+      "constant_speed_endpoint_m": 170.023,
+      "ai_improves_over_no_ai": true,
+      "ai_improves_over_constant_speed": true,
+      "gyro_projection_norm": 0.8399795222733898,
+      "speed_anchor_offset_mps": -11.155596155882552
+    },
+    {
+      "recording": "S-M.csv",
+      "start_s": 1843.9,
+      "duration_s": 10.0,
+      "distance_m": 3.14,
+      "ai_endpoint_m": 15.518,
+      "no_ai_endpoint_m": 23.008,
+      "constant_speed_endpoint_m": 23.008,
+      "ai_improves_over_no_ai": true,
+      "ai_improves_over_constant_speed": true,
+      "gyro_projection_norm": 0.7116317996205019,
+      "speed_anchor_offset_mps": 1.1720627040233191
+    },
+    {
+      "recording": "S-M.csv",
+      "start_s": 1843.9,
+      "duration_s": 30.0,
+      "distance_m": 28.47,
+      "ai_endpoint_m": 62.628,
+      "no_ai_endpoint_m": 49.985,
+      "constant_speed_endpoint_m": 49.985,
+      "ai_improves_over_no_ai": false,
+      "ai_improves_over_constant_speed": false,
+      "gyro_projection_norm": 0.7116317996205019,
+      "speed_anchor_offset_mps": 1.1720627040233191
+    },
+    {
+      "recording": "S-M.csv",
+      "start_s": 1843.9,
+      "duration_s": 60.0,
+      "distance_m": 151.08,
+      "ai_endpoint_m": 156.367,
+      "no_ai_endpoint_m": 6.153,
+      "constant_speed_endpoint_m": 6.162,
+      "ai_improves_over_no_ai": false,
+      "ai_improves_over_constant_speed": false,
+      "gyro_projection_norm": 0.7116317996205019,
+      "speed_anchor_offset_mps": 1.1720627040233191
+    },
+    {
+      "recording": "S-Vw4.csv",
+      "start_s": 4429.0,
+      "duration_s": 10.0,
+      "distance_m": 300.9,
+      "ai_endpoint_m": 8.135,
+      "no_ai_endpoint_m": 8.176,
+      "constant_speed_endpoint_m": 2.51,
+      "ai_improves_over_no_ai": true,
+      "ai_improves_over_constant_speed": false,
+      "gyro_projection_norm": 1.2899078479184125,
+      "speed_anchor_offset_mps": 10.85432671179506
+    },
+    {
+      "recording": "S-Vw4.csv",
+      "start_s": 4429.0,
+      "duration_s": 30.0,
+      "distance_m": 932.76,
+      "ai_endpoint_m": 29.245,
+      "no_ai_endpoint_m": 29.16,
+      "constant_speed_endpoint_m": 37.743,
+      "ai_improves_over_no_ai": false,
+      "ai_improves_over_constant_speed": true,
+      "gyro_projection_norm": 1.2899078479184125,
+      "speed_anchor_offset_mps": 10.85432671179506
+    },
+    {
+      "recording": "S-Vw4.csv",
+      "start_s": 4429.0,
+      "duration_s": 60.0,
+      "distance_m": 1899.05,
+      "ai_endpoint_m": 49.183,
+      "no_ai_endpoint_m": 88.07,
+      "constant_speed_endpoint_m": 79.858,
+      "ai_improves_over_no_ai": true,
+      "ai_improves_over_constant_speed": true,
+      "gyro_projection_norm": 1.2899078479184125,
+      "speed_anchor_offset_mps": 10.85432671179506
+    }
+  ]
+}

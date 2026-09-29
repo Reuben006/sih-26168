@@ -2,60 +2,87 @@ name: Build Standalone Android APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Build Web Application
+      - name: Build and bundle web application
+        shell: bash
         run: |
-          cd frontend
-          npm install
-          npm run build
-          cd ..
-          rm -rf android/app/src/main/assets
+          set -euo pipefail
+          npm ci --prefix frontend
+          npm run build --prefix frontend
           mkdir -p android/app/src/main/assets
-          cp -r frontend/dist/* android/app/src/main/assets/
+          cp -r frontend/dist/. android/app/src/main/assets/
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: temurin
 
-      - name: Ensure Persistent Debug Keystore
+      - name: Install required Android SDK packages
+        shell: bash
         run: |
-          if [ ! -f android/app/debug.keystore ]; then
-            keytool -genkey -v -keystore android/app/debug.keystore \
-              -storepass android -alias androiddebugkey -keypass android \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
-          fi
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Setup Gradle
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.5'
 
-      - name: Build and Rename Debug APK
-        run: |
-          cd android
-          gradle assembleDebug
-          mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/IDR-X-Navigation-v4.0.apk
+      - name: Build and lint debug APK
+        working-directory: android
+        run: gradle --no-daemon assembleDebug lintDebug
 
-      - name: Upload APK Artifact
+      - name: Verify and name APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/KinematiX.apk
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify android/app/build/outputs/apk/debug/KinematiX.apk
+          python - <<'PY'
+          import json, zipfile
+          from pathlib import Path
+          folder = Path('android/app/build/outputs/apk/debug')
+          metadata = json.loads((folder / 'output-metadata.json').read_text())
+          assert metadata['applicationId'] == 'com.originx.kinematix'
+          with zipfile.ZipFile(folder / 'KinematiX.apk') as apk:
+              for name in ['assets/index.html', 'assets/speed_model.json', 'assets/benchmark_summary.json']:
+                  assert name in apk.namelist(), name
+          print('Verified package ID, signature and bundled offline assets.')
+          PY
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: IDR-X-Navigation-v4.0
-          path: android/app/build/outputs/apk/debug/IDR-X-Navigation-v4.0.apk
+          name: KinematiX-debug
+          path: android/app/build/outputs/apk/debug/KinematiX.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-lint
+          path: android/app/build/reports/lint-results-debug.*
+          if-no-files-found: ignore

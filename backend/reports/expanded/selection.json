@@ -1,0 +1,19 @@
+{
+  "selected": "baseline",
+  "validation": {
+    "baseline": {
+      "runs": 18,
+      "passing": 4,
+      "median_drift_pct": 22.093,
+      "mean_endpoint_m": 98.62949999999998
+    },
+    "candidate": {
+      "runs": 18,
+      "passing": 4,
+      "median_drift_pct": 26.664,
+      "mean_endpoint_m": 88.68488888888889
+    }
+  },
+  "selection_rule": "More validation passes, breaking ties with median drift; no test-driven selection.",
+  "model_sha256": "3bf0d2d12ed0521b6464e88a27eebfaa2304d1afa8015e26dd2fe4423ac2a857"
+}

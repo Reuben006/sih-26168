@@ -1,123 +1,74 @@
-import os
+from pathlib import Path
 import asyncio
-import shutil
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException
+import json
+import tempfile
+from functools import lru_cache
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from app.algorithms.simulation_engine import SimulationEngine
-from app.algorithms.iovnbd_parser import IOVNBDParser
+from .algorithms.simulation_engine import SimulationEngine
+from .algorithms.iovnbd_parser import IOVNBDParser
+from .algorithms.ai_speed_model import MODEL_PATH
 
-app = FastAPI(title="IDR-X Engine API", version="1.0.0")
+ROOT = Path(__file__).parent
+app = FastAPI(title='KinematiX Navigation Engine',version='1.0.0')
+app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173','https://appassets.androidplatform.net'],allow_methods=['GET','POST'],allow_headers=['*'])
+PRESETS = {'held_out':'S-S1.csv','motorway':'S-Vw4.csv','mixed':'S-M.csv','test':'S-Vw1.csv'}
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@app.get('/')
+def index():
+    return {'project': 'KinematiX', 'service': 'Evaluation API', 'web_app': 'http://localhost:5173/', 'alternative_web_app': 'http://127.0.0.1:5173/', 'health': '/api/health', 'api_docs': '/docs'}
 
-sim = SimulationEngine()
-
-@app.get("/api/health")
+@app.get('/api/health')
 def health():
-    return {"status": "operational", "project": "IDR-X PS168", "state": sim.state}
+    return dict(status='ready',project='KinematiX',team_name='ORIGIN X',team_id='134028',model_available=MODEL_PATH.exists(),benchmark='SIH 26168',update_hz=10)
 
-@app.post("/api/simulation/start")
-def start_simulation():
-    sim.reset()
-    return {"status": "started", "state": sim.state}
+@app.get('/api/model')
+def model_info():
+    p = ROOT.parent/'reports/model_training.json'
+    return json.loads(p.read_text()) if p.exists() else {'status':'not trained'}
 
-@app.post("/api/simulation/outage")
-def toggle_outage(enable: bool = True):
-    sim.set_outage(enable)
-    return {"gnss_available": sim.gnss_available, "state": sim.state}
+@lru_cache(maxsize=24)
+def evaluate(name,duration,start):
+    path = ROOT/'datasets'/name
+    if not path.exists(): raise FileNotFoundError('Dataset not installed')
+    return IOVNBDParser.process_dataset(path,duration,start)
 
-@app.post("/api/simulation/toggle-nhc")
-def toggle_nhc(enable: bool = True):
-    sim.nhc_enabled = enable
-    return {"nhc_enabled": sim.nhc_enabled}
+@app.get('/api/evaluation/preset')
+def preset(preset_id:str='held_out',duration:float=Query(30,ge=5,le=120),start:float|None=Query(None,ge=20)):
+    if preset_id not in PRESETS: raise HTTPException(404,'Unknown recording')
+    try: return evaluate(PRESETS[preset_id],duration,start)
+    except (ValueError,FileNotFoundError) as e: raise HTTPException(422,str(e))
 
-@app.post("/api/simulation/toggle-map-matching")
-def toggle_map_matching(enable: bool = True):
-    sim.map_matching_enabled = enable
-    return {"map_matching_enabled": sim.map_matching_enabled}
-
-@app.post("/api/evaluation/upload")
-def upload_dataset(file: UploadFile = File(...)):
-    temp_dir = "./temp_datasets"
-    os.makedirs(temp_dir, exist_ok=True)
-    temp_path = os.path.join(temp_dir, file.filename)
-    
+@app.post('/api/evaluation/upload')
+async def upload(file:UploadFile=File(...)):
+    if not file.filename or not file.filename.lower().endswith('.csv'):
+        raise HTTPException(422,'Select an IO-VNBD smartphone CSV.')
+    path = None
     try:
-        with open(temp_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
-        results = IOVNBDParser.process_dataset(temp_path)
-        return results
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        with tempfile.NamedTemporaryFile(suffix='.csv',delete=False) as f:
+            path = Path(f.name); size = 0
+            while chunk := await file.read(1024*1024):
+                size += len(chunk)
+                if size>80*1024*1024: raise HTTPException(413,'Maximum upload is 80 MB.')
+                f.write(chunk)
+        result = await asyncio.to_thread(IOVNBDParser.process_dataset,path)
+        result['track_name'] = Path(file.filename).name
+        return result
+    except ValueError as e: raise HTTPException(422,str(e))
     finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+        if path is not None: path.unlink(missing_ok=True)
 
-@app.get("/api/evaluation/preset")
-def evaluate_preset(preset_id: str = "urban_canyon"):
-    """
-    Evaluates official IO-VNBD benchmark files with calibrated track metrics:
-    Track 1 = 4.89%, Track 2 = 5.00%, Track 3 = 3.03%
-    """
-    preset_files = {
-        "urban_canyon": ("app/datasets/S-M.csv", "IO-VNBD Urban Canyon (S-M.csv)", {
-            "dataset_points": 105974,
-            "total_distance_m": 4890.2,
-            "outage_distance_m": 920.0,
-            "rmse_m": 2.85,
-            "mae_m": 2.15,
-            "max_error_m": 5.82,
-            "final_error_m": 45.0,
-            "drift_percentage": 4.89,
-        }),
-        "highway_motorway": ("app/datasets/S-Vw4.csv", "IO-VNBD High-Speed Motorway (S-Vw4.csv)", {
-            "dataset_points": 126510,
-            "total_distance_m": 8200.0,
-            "outage_distance_m": 1450.0,
-            "rmse_m": 3.10,
-            "mae_m": 2.45,
-            "max_error_m": 6.25,
-            "final_error_m": 72.5,
-            "drift_percentage": 5.00,
-        }),
-        "country_roads": ("app/datasets/S-S1.csv", "IO-VNBD Rural Track (S-S1.csv)", {
-            "dataset_points": 51730,
-            "total_distance_m": 2980.0,
-            "outage_distance_m": 980.0,
-            "rmse_m": 2.10,
-            "mae_m": 1.65,
-            "max_error_m": 4.55,
-            "final_error_m": 29.7,
-            "drift_percentage": 3.03,
-        })
-    }
-
-    rel_path, track_name, fallback = preset_files.get(preset_id, preset_files["urban_canyon"])
-    full_path = os.path.join(os.path.dirname(__file__), "..", rel_path)
-
-    if os.path.exists(full_path):
-        results = IOVNBDParser.process_dataset(full_path)
-        results["track_name"] = track_name
-        return results
-
-    fallback["track_name"] = track_name
-    fallback["sih_target_met"] = True
-    return fallback
-
-@app.websocket("/ws/telemetry")
-async def websocket_telemetry(websocket: WebSocket):
-    await websocket.accept()
+@app.websocket('/ws/telemetry')
+async def telemetry(ws:WebSocket):
+    await ws.accept()
+    sim = SimulationEngine()  # Every visitor has an independent simulation.
     try:
         while True:
-            packet = sim.step()
-            await websocket.send_json(packet)
-            await asyncio.sleep(0.05)
-    except WebSocketDisconnect:
-        pass
+            try:
+                command = await asyncio.wait_for(ws.receive_json(),timeout=.1)
+                if command.get('action')=='outage': sim.set_outage(bool(command.get('enabled')))
+                elif command.get('action')=='reset': sim.reset()
+                elif command.get('action')=='shock': sim.shock_pending = True
+            except asyncio.TimeoutError: pass
+            await ws.send_json(sim.step())
+    except WebSocketDisconnect: pass

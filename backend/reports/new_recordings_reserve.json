@@ -1,0 +1,30 @@
+{
+  "note": "New filename families downloaded but not used in fitting, tuning or scored evaluation. Resolve session/driver provenance and sensor timing before assigning roles. Existing synchronized and unsynchronized versions of a named recording must share a split.",
+  "recordings": [
+    "S-A1.csv",
+    "S-A10.csv",
+    "S-A11.csv",
+    "S-A12.csv",
+    "S-A13.csv",
+    "S-A2.csv",
+    "S-A3.csv",
+    "S-A4.csv",
+    "S-A5.csv",
+    "S-A6.csv",
+    "S-A7.csv",
+    "S-A8.csv",
+    "S-A9.csv",
+    "S-I.csv",
+    "S-T1.csv",
+    "S-T10.csv",
+    "S-T11.csv",
+    "S-T2.csv",
+    "S-T3.csv",
+    "S-T4.csv",
+    "S-T5.csv",
+    "S-T6.csv",
+    "S-T7.csv",
+    "S-T8.csv",
+    "S-T9.csv"
+  ]
+}

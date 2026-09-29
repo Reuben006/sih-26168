@@ -20,3 +20,48 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+# Local verification and launcher logs
+.test-build/
+.runtime/
+
+android/local.properties
+android/app/src/main/assets/
+
+# Historical binary models and local signing credentials
+*.pkl
+*.keystore
+*.jks
+# Generated experiment source snapshots (metrics remain versioned)
+backend/reports/**/*.py
+
+# IDE metadata and machine-specific configuration
+.idea/
+*.iml
+.vscode/
+local.properties
+
+# Environment overrides (keep documented templates)
+.env.*
+!.env.example
+!.env.sample
+
+# Logs, test caches and coverage output
+*.log
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage/
+*.tsbuildinfo
+
+# Android distribution and native build artifacts
+*.aab
+*.apks
+.externalNativeBuild/
+.cxx/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini

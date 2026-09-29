@@ -1,0 +1,551 @@
+[
+  {
+    "name": "S-M.csv",
+    "split": "train",
+    "duration_s": 5250.400000000001,
+    "fix_interval_s": 9.0,
+    "rows": 52505,
+    "data_sha256": "828777865e0252a2e594ce4a238189e5ab12377dc63082a7f1a7627667e9a582"
+  },
+  {
+    "name": "S-S1.csv",
+    "split": "validation",
+    "duration_s": 5174.400000000001,
+    "fix_interval_s": 9.0,
+    "rows": 51745,
+    "data_sha256": "8ae3878b9a458c7389d9130c2d35cddeb1997e914c1fbcb10b06048c0c5c0276"
+  },
+  {
+    "name": "S-S2.csv",
+    "split": "validation",
+    "duration_s": 9201.0,
+    "fix_interval_s": 9.0,
+    "rows": 92011,
+    "data_sha256": "48ef487051d9e1a9269ac50bdb105b3a951971dec4454ddb43f57414982a0949"
+  },
+  {
+    "name": "S-S3a.csv",
+    "split": "validation",
+    "duration_s": 2461.9,
+    "fix_interval_s": 9.0,
+    "rows": 24620,
+    "data_sha256": "599d78ddeefee2a4bcf3a997774354bb8416f1e021d3799a72bae9fe1639154c"
+  },
+  {
+    "name": "S-S3b.csv",
+    "split": "validation",
+    "duration_s": 476.8,
+    "fix_interval_s": 9.0,
+    "rows": 4769,
+    "data_sha256": "b09bd4d7753473f082c1b70ae1f36b1ae097947d0a795fa81527734bf134403b"
+  },
+  {
+    "name": "S-S3c.csv",
+    "split": "validation",
+    "duration_s": 3718.1000000000004,
+    "fix_interval_s": 9.0,
+    "rows": 37182,
+    "data_sha256": "f1eea36b5b1d0130a17edee3a598a5a6beb375888096500d5527f09be5d57c9e"
+  },
+  {
+    "name": "S-S4.csv",
+    "split": "validation",
+    "duration_s": 5577.900000000001,
+    "fix_interval_s": 9.0,
+    "rows": 55780,
+    "data_sha256": "a3ce6635127953cb848a0f7509fa0d5be12dcf99dac2d273a541d1800ab3e55c"
+  },
+  {
+    "name": "S-Vfa01.csv",
+    "split": "train",
+    "duration_s": 1148.4,
+    "fix_interval_s": 9.0,
+    "rows": 11485,
+    "data_sha256": "93eda5657f7fc018f8296a5a3668d833ecc190df845d475f9da091b26c4d1e98"
+  },
+  {
+    "name": "S-Vfa02.csv",
+    "split": "train",
+    "duration_s": 6752.200000000001,
+    "fix_interval_s": 9.0,
+    "rows": 67523,
+    "data_sha256": "cb4df13b74936b8dc81403c8a55d6d9c69e4f56633b5847c00bcb08d3d9c326b"
+  },
+  {
+    "name": "S-Vta1a.csv",
+    "split": "train",
+    "duration_s": 2567.4,
+    "fix_interval_s": 1.0,
+    "rows": 25675,
+    "data_sha256": "bf32f990464c51c1fa53d81c914e0a437886256fa68ffac6f9ef7fb7e522e027"
+  },
+  {
+    "name": "S-Vta1b.csv",
+    "split": "train",
+    "duration_s": 95.30000000000001,
+    "fix_interval_s": 1.0,
+    "rows": 954,
+    "data_sha256": "dd269dcda5d3c89cc4ddd095c601f581830940272340ea8f1ddab6bbd64228b4"
+  },
+  {
+    "name": "S-Vta2.csv",
+    "split": "train",
+    "duration_s": 1098.9,
+    "fix_interval_s": 1.0,
+    "rows": 10990,
+    "data_sha256": "5d517cc411b1971aa9d0395b89730845ea796720c8a46dfef652f3678886cc92"
+  },
+  {
+    "name": "S-Vta3.csv",
+    "split": "train",
+    "duration_s": 64.3,
+    "fix_interval_s": 9.0,
+    "rows": 644,
+    "data_sha256": "d11fe590a34837977c5f088d1ea27c63c79b95e2c2d6e16f451d9df21be03740"
+  },
+  {
+    "name": "S-Vta4.csv",
+    "split": "train",
+    "duration_s": 178.70000000000002,
+    "fix_interval_s": 9.0,
+    "rows": 1788,
+    "data_sha256": "ad264a8db40827a35858e5561303b39f4d055181f1346f770383af44ed359690"
+  },
+  {
+    "name": "S-Vta5.csv",
+    "split": "train",
+    "excluded": "Too few distinct GNSS positions for evaluation."
+  },
+  {
+    "name": "S-Vta6.csv",
+    "split": "train",
+    "duration_s": 137.4,
+    "fix_interval_s": 9.0,
+    "rows": 1375,
+    "data_sha256": "9d1c1136b14063eee545aa33b16267b7d6b2422243f64efabe196a4e4bf004fb"
+  },
+  {
+    "name": "S-Vta7.csv",
+    "split": "train",
+    "duration_s": 83.9,
+    "fix_interval_s": 9.0,
+    "rows": 840,
+    "data_sha256": "a3aec3d9ac74519bbced7c34b3a0c801300f7d0eab33d3b49597b5c5bb5984af"
+  },
+  {
+    "name": "S-Vta8.csv",
+    "split": "train",
+    "duration_s": 367.40000000000003,
+    "fix_interval_s": 9.0,
+    "rows": 3675,
+    "data_sha256": "c42f5b8fc7bc52de7aa67be66bc01f08f19f92adf13c4cab5a5483af6f9b914b"
+  },
+  {
+    "name": "S-Vta9.csv",
+    "split": "train",
+    "excluded": "Too few distinct GNSS positions for evaluation."
+  },
+  {
+    "name": "S-Vta10.csv",
+    "split": "train",
+    "duration_s": 150.1,
+    "fix_interval_s": 9.0,
+    "rows": 1502,
+    "data_sha256": "cdc989bfcaa6d1c50cfcca0da0c4f0f88c13e9e63c3d57a3ec023f4d818dad32"
+  },
+  {
+    "name": "S-Vta11.csv",
+    "split": "train",
+    "duration_s": 50.900000000000006,
+    "fix_interval_s": 9.0,
+    "rows": 510,
+    "data_sha256": "4d4c5546d1ca5786ff8a9295c6f1029f84d2b0454045fe27e1857d072b5a26ff"
+  },
+  {
+    "name": "S-Vta12.csv",
+    "split": "train",
+    "duration_s": 60.900000000000006,
+    "fix_interval_s": 9.0,
+    "rows": 610,
+    "data_sha256": "28470cc18d190f4d15a87c6d8b8def79626cab406fd82978f1eb57d5619eb287"
+  },
+  {
+    "name": "S-Vta13.csv",
+    "split": "train",
+    "duration_s": 40.300000000000004,
+    "fix_interval_s": 9.0,
+    "rows": 404,
+    "data_sha256": "2125f9c1c1f4bb4fa3418c7b7e14a5e2379e060a9e200f9ae9c8e3e28e0099ae"
+  },
+  {
+    "name": "S-Vta14.csv",
+    "split": "train",
+    "duration_s": 288.3,
+    "fix_interval_s": 9.0,
+    "rows": 2884,
+    "data_sha256": "7d96f5d5bf98246d09dbd0e99599aa079a2e4ab1978eb16fd73328dc0eb6083a"
+  },
+  {
+    "name": "S-Vta15.csv",
+    "split": "train",
+    "duration_s": 83.2,
+    "fix_interval_s": 9.0,
+    "rows": 833,
+    "data_sha256": "9daa811d21937dbd93d2cce2e34b3debe078f36fbfd59b60112d80b310429188"
+  },
+  {
+    "name": "S-Vta16.csv",
+    "split": "train",
+    "duration_s": 1133.3,
+    "fix_interval_s": 9.0,
+    "rows": 11334,
+    "data_sha256": "218445d856bef6f460deb01b89ba88916990aee250dd1ccef245c12bc0108597"
+  },
+  {
+    "name": "S-Vta17.csv",
+    "split": "train",
+    "duration_s": 343.90000000000003,
+    "fix_interval_s": 9.0,
+    "rows": 3440,
+    "data_sha256": "e8a2665a612cbd215e2b75ddb2ed2d12958b56d1bd9a2ad455850c145f7b1ef6"
+  },
+  {
+    "name": "S-Vta19.csv",
+    "split": "train",
+    "excluded": "Too few distinct GNSS positions for evaluation."
+  },
+  {
+    "name": "S-Vta20.csv",
+    "split": "train",
+    "duration_s": 322.1,
+    "fix_interval_s": 9.0,
+    "rows": 3222,
+    "data_sha256": "90a21814d8eb2e729a8934fa5bcd050c3193a44c7cf001e82ebf34e2ec4538f2"
+  },
+  {
+    "name": "S-Vta21.csv",
+    "split": "train",
+    "duration_s": 207.70000000000002,
+    "fix_interval_s": 9.0,
+    "rows": 2078,
+    "data_sha256": "04c16da3dda9fcf3bcddd50974f44f432c9898ac6902c518b7210590f69baca8"
+  },
+  {
+    "name": "S-Vta22.csv",
+    "split": "train",
+    "duration_s": 156.3,
+    "fix_interval_s": 9.0,
+    "rows": 1564,
+    "data_sha256": "49e049f97a2625227b418cbcbc7d23024d478f2bb4df42c50119e7616e7a72db"
+  },
+  {
+    "name": "S-Vta23.csv",
+    "split": "train",
+    "duration_s": 110.80000000000001,
+    "fix_interval_s": 9.0,
+    "rows": 1109,
+    "data_sha256": "711fa9934864f5cec923431d8476c9fc052373dd3bf2d4159c4c5d1265426f2e"
+  },
+  {
+    "name": "S-Vta24.csv",
+    "split": "train",
+    "duration_s": 117.0,
+    "fix_interval_s": 9.0,
+    "rows": 1171,
+    "data_sha256": "d481165c0e12fdd5d4f05bbb2d5472cbe265e4f5b96d732561eaff19883c25c6"
+  },
+  {
+    "name": "S-Vta25.csv",
+    "split": "train",
+    "duration_s": 64.4,
+    "fix_interval_s": 9.000000000000002,
+    "rows": 645,
+    "data_sha256": "068b12ede9ae85b27ff01ed7960c5bcb2cd2a8aa7634cd52e865085eb33bf222"
+  },
+  {
+    "name": "S-Vta26.csv",
+    "split": "train",
+    "duration_s": 193.3,
+    "fix_interval_s": 9.0,
+    "rows": 1934,
+    "data_sha256": "03c22727c77aff483a802318b84bc6350038963f471da0c7c8c8018119ddefab"
+  },
+  {
+    "name": "S-Vta27.csv",
+    "split": "train",
+    "duration_s": 253.9,
+    "fix_interval_s": 9.0,
+    "rows": 2540,
+    "data_sha256": "b6d08f5fe72ca4d28759232b26711a8c6f36987fa3003183a48bef0f730d3bce"
+  },
+  {
+    "name": "S-Vta28.csv",
+    "split": "train",
+    "duration_s": 420.90000000000003,
+    "fix_interval_s": 9.0,
+    "rows": 4210,
+    "data_sha256": "5c520ac9dcce6c9af16dfa9b54005012b7d29b2455dcc75834bf7ef13a1a1bf4"
+  },
+  {
+    "name": "S-Vta29.csv",
+    "split": "train",
+    "duration_s": 1266.1000000000001,
+    "fix_interval_s": 9.0,
+    "rows": 12662,
+    "data_sha256": "51485a43f776c5fc1ced0ce3cf101f3fe5c8cc449a2906d25d5ce80593711a83"
+  },
+  {
+    "name": "S-Vta30.csv",
+    "split": "train",
+    "duration_s": 1713.4,
+    "fix_interval_s": 9.0,
+    "rows": 17135,
+    "data_sha256": "4d7ef95aa6f82065d3020bc0c1736e9e3e9618de991d70b9ea24d7d45325d993"
+  },
+  {
+    "name": "S-Vtb1.csv",
+    "split": "train",
+    "duration_s": 2514.3,
+    "fix_interval_s": 9.0,
+    "rows": 25144,
+    "data_sha256": "a66093a20985ea13692a7b345d4ea274ee8fb01d180f75bfbe257a86156b4ad4"
+  },
+  {
+    "name": "S-Vtb2.csv",
+    "split": "train",
+    "duration_s": 571.0,
+    "fix_interval_s": 9.0,
+    "rows": 5711,
+    "data_sha256": "c93f431af66968b676561ac700afeb4161e1ba6aa4fa1ac716b973b15b6f00da"
+  },
+  {
+    "name": "S-Vtb3.csv",
+    "split": "train",
+    "duration_s": 332.20000000000005,
+    "fix_interval_s": 12.0,
+    "rows": 3323,
+    "data_sha256": "79604b9e2a1aac2ac6618d20317e86a103a000fbf1d2c6f233ca6f02ce51e736"
+  },
+  {
+    "name": "S-Vtb4.csv",
+    "split": "train",
+    "duration_s": 55.400000000000006,
+    "fix_interval_s": 9.0,
+    "rows": 555,
+    "data_sha256": "ad12cfb4d6657f7d6be6411b894a178e5e26f30be2ed75853812fb9bd7ba5922"
+  },
+  {
+    "name": "S-Vtb5.csv",
+    "split": "train",
+    "duration_s": 6438.700000000001,
+    "fix_interval_s": 9.0,
+    "rows": 64388,
+    "data_sha256": "432508210c3f3c4d950d63756ee33ea412aba4966fedb1bcb552488e04bb1999"
+  },
+  {
+    "name": "S-Vtb6.csv",
+    "split": "train",
+    "duration_s": 49.6,
+    "fix_interval_s": 9.0,
+    "rows": 497,
+    "data_sha256": "6ec9b70669b8f308a859fcc89f963df457d4894e072171bad228501da8c06a2d"
+  },
+  {
+    "name": "S-Vtb7.csv",
+    "split": "train",
+    "duration_s": 46.0,
+    "fix_interval_s": 9.0,
+    "rows": 461,
+    "data_sha256": "6c4b22da9fd28bb793e5d7ac367e1477c40503d2d17702aebadb701b71dfbc29"
+  },
+  {
+    "name": "S-Vtb8.csv",
+    "split": "train",
+    "duration_s": 66.60000000000001,
+    "fix_interval_s": 9.0,
+    "rows": 667,
+    "data_sha256": "b71e46aea218a33dde35e3286344d1fe8591dfbc82b9f5a67d9503ddf92d6904"
+  },
+  {
+    "name": "S-Vtb9.csv",
+    "split": "train",
+    "duration_s": 45.0,
+    "fix_interval_s": 9.0,
+    "rows": 451,
+    "data_sha256": "8b4579632874e5e39d9ab793338f1aa0c39fa5232284f735578e543b2df56267"
+  },
+  {
+    "name": "S-Vtb10.csv",
+    "split": "train",
+    "excluded": "Too few distinct GNSS positions for evaluation."
+  },
+  {
+    "name": "S-Vtb11.csv",
+    "split": "train",
+    "excluded": "Too few distinct GNSS positions for evaluation."
+  },
+  {
+    "name": "S-Vtb12.csv",
+    "split": "train",
+    "duration_s": 44.6,
+    "fix_interval_s": 9.0,
+    "rows": 447,
+    "data_sha256": "7597cf13dad78614ade4b314ea23189a5bb03aa28c720c9fe63c58faaf922262"
+  },
+  {
+    "name": "S-Vw1.csv",
+    "split": "train",
+    "excluded": "Too few distinct GNSS positions for evaluation."
+  },
+  {
+    "name": "S-Vw2.csv",
+    "split": "train",
+    "duration_s": 5271.1,
+    "fix_interval_s": 9.0,
+    "rows": 52712,
+    "data_sha256": "7026b5e99945678d90fe9ebd387d40c40c21ccb92dad9cc472cfc8475a1624ba"
+  },
+  {
+    "name": "S-Vw3.csv",
+    "split": "train",
+    "duration_s": 386.0,
+    "fix_interval_s": 9.0,
+    "rows": 3861,
+    "data_sha256": "df97a5d95057e2d1d59befb0b7e8823496cef40b653fb11ea082e4f4494dc197"
+  },
+  {
+    "name": "S-Vw4.csv",
+    "split": "train",
+    "duration_s": 12652.400000000001,
+    "fix_interval_s": 9.0,
+    "rows": 126525,
+    "data_sha256": "4ddf4c341fb94d4d9702739ee41676d336007e2670fd7d350379b50930e275c2"
+  },
+  {
+    "name": "S-Vw5.csv",
+    "split": "train",
+    "duration_s": 101.10000000000001,
+    "fix_interval_s": 9.0,
+    "rows": 1012,
+    "data_sha256": "7516beeb8be73d28decd2a46d56a244a6228c72d1fffd14fdb1f335dba07322b"
+  },
+  {
+    "name": "S-Vw6.csv",
+    "split": "train",
+    "duration_s": 127.9,
+    "fix_interval_s": 9.0,
+    "rows": 1280,
+    "data_sha256": "3d78a47c9d99c0cb29d5774bd0c28a194a838409262804b69ef6e909004e717f"
+  },
+  {
+    "name": "S-Vw7.csv",
+    "split": "train",
+    "duration_s": 160.0,
+    "fix_interval_s": 9.0,
+    "rows": 1601,
+    "data_sha256": "763d5657e54eaf1bbfc59a4828b8ae01b10214c7b1db32ff1d7fb72a4c5db624"
+  },
+  {
+    "name": "S-Vw8.csv",
+    "split": "train",
+    "duration_s": 152.70000000000002,
+    "fix_interval_s": 9.0,
+    "rows": 1528,
+    "data_sha256": "7fff244c7456bb9c4b6416f784b938b785acff80f6ca82e0128f4f880f0fb4ba"
+  },
+  {
+    "name": "S-Vw9.csv",
+    "split": "train",
+    "duration_s": 55.1,
+    "fix_interval_s": 8.95,
+    "rows": 552,
+    "data_sha256": "1ac69946ddbfb1a2a2edd966967f034fd3384ed2f829d09421bf707c8355fc78"
+  },
+  {
+    "name": "S-Vw10.csv",
+    "split": "train",
+    "duration_s": 65.10000000000001,
+    "fix_interval_s": 9.0,
+    "rows": 652,
+    "data_sha256": "d234d029271294cfb6d5c36499f88e996072fe2df1839164dc037ba9a4847dfa"
+  },
+  {
+    "name": "S-Vw11.csv",
+    "split": "train",
+    "duration_s": 490.70000000000005,
+    "fix_interval_s": 9.0,
+    "rows": 4908,
+    "data_sha256": "021e374cdb1bd16f14be878eb55f33621f2c3876e45fa43973362dff888fec4d"
+  },
+  {
+    "name": "S-Vw12.csv",
+    "split": "train",
+    "duration_s": 91.60000000000001,
+    "fix_interval_s": 9.000000000000002,
+    "rows": 917,
+    "data_sha256": "d141a1e792887ed6a68582735d8fa6b1e9c52227727c0d0a0ff83408cba7c479"
+  },
+  {
+    "name": "S-Vw13.csv",
+    "split": "train",
+    "excluded": "Too few distinct GNSS positions for evaluation."
+  },
+  {
+    "name": "S-Vw14a.csv",
+    "split": "train",
+    "duration_s": 313.70000000000005,
+    "fix_interval_s": 9.0,
+    "rows": 3138,
+    "data_sha256": "10b4d4e50aa4a406d90b2e6b9e3c98212a2742efef24ef260fd164ce9546aed1"
+  },
+  {
+    "name": "S-Vw14b.csv",
+    "split": "train",
+    "duration_s": 1958.7,
+    "fix_interval_s": 9.0,
+    "rows": 19588,
+    "data_sha256": "fdbeb27adcf6b6f3ff94b967278ee4654cf232ea1bde33f64d296a63063dc5a6"
+  },
+  {
+    "name": "S-Vw14c.csv",
+    "split": "train",
+    "duration_s": 1582.4,
+    "fix_interval_s": 9.0,
+    "rows": 15825,
+    "data_sha256": "6124aab28365de881022361760cd14154b29c998bf923e1b2d08169a5751cdfb"
+  },
+  {
+    "name": "S-Vw15.csv",
+    "split": "train",
+    "excluded": "Too few distinct GNSS positions for evaluation."
+  },
+  {
+    "name": "S-Vw16a.csv",
+    "split": "train",
+    "duration_s": 587.7,
+    "fix_interval_s": 9.0,
+    "rows": 5878,
+    "data_sha256": "cb65ee23e225836d74d51d1e972a3a90fc5ee82023f85b322b68fd0463461760"
+  },
+  {
+    "name": "S-Vw16b.csv",
+    "split": "train",
+    "duration_s": 112.5,
+    "fix_interval_s": 9.0,
+    "rows": 1126,
+    "data_sha256": "382ae6cd08dc8af0451ac39961b443d91f4130d2d50acd429741c5cac4afaad3"
+  },
+  {
+    "name": "S-Vw17.csv",
+    "split": "train",
+    "excluded": "Too few distinct GNSS positions for evaluation."
+  },
+  {
+    "name": "S-Y1.csv",
+    "split": "test",
+    "duration_s": 6690.3,
+    "fix_interval_s": 9.0,
+    "rows": 66904,
+    "data_sha256": "d41f5d4e602813ede525b751571229c9d5f5415354b6079cdc42808cdf162439"
+  }
+]

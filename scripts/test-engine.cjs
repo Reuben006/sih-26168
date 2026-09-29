@@ -1,0 +1,17 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {LocalEngine,Demo,forestPredict,roadsFromGeoJSON,matchRoad}=require('../.test-build/engine.js');
+let e=new LocalEngine();e.v=10;
+for(let i=0;i<100;i++)e.step(.1,0,0);
+assert.ok(Math.abs(e.x-100)<1e-8);assert.ok(Math.abs(e.y)<1e-8);
+const v=e.v;e.step(.1,0,100,undefined,true);assert.equal(e.v,v);
+let a=new Demo(),b=new Demo();for(let i=0;i<100;i++)assert.deepEqual(a.step(),b.step());
+a.denied=true;for(let i=0;i<30;i++)a.step();assert.equal(a.engine.mode,'DEAD_RECKONING');
+a.denied=false;for(let i=0;i<30;i++)a.step();assert.equal(a.engine.mode,'GNSS_FUSION');
+const roads=[{a:[0,0],b:[100,0]}];assert.deepEqual(matchRoad([40,3],0,roads),[40,0]);assert.equal(matchRoad([40,50],0,roads),null);assert.equal(matchRoad([40,3],Math.PI/2,roads),null);
+assert.equal(matchRoad([40,5],0,[...roads,{a:[0,10],b:[100,10]}]),null);
+assert.throws(()=>roadsFromGeoJSON({features:[]},[0,0]));
+const fixture=JSON.parse(fs.readFileSync('backend/tests/model_parity.json','utf8'));const model=JSON.parse(fs.readFileSync('frontend/public/speed_model.json','utf8'));
+assert.ok(Math.abs(forestPredict(model,fixture.window)-fixture.expected)<1e-8,'Python / JavaScript forest predictions must match');
+assert.equal(forestPredict(model,fixture.window.slice(0,10)),undefined);
+console.log('PASS: straight propagation, shock gating, deterministic demo, blackout/recovery, map gates/ambiguity, model parity/warmup.');
